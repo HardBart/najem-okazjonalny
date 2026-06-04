@@ -1,0 +1,27 @@
+# Przykładowa konfiguracja nginx jako reverse proxy dla aplikacji Next.js (PM2 na :3000).
+# Skopiuj do /etc/nginx/sites-available/najemokazjonalny24.com, podmień domenę,
+# włącz symlinkiem do sites-enabled, przetestuj `nginx -t` i przeładuj nginx.
+#
+# SSL (certyfikat) dograj komendą:  certbot --nginx -d najemokazjonalny24.com -d www.najemokazjonalny24.com
+# Certbot sam dopisze blok 443 i przekierowanie z 80.
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name najemokazjonalny24.com www.najemokazjonalny24.com;
+
+    # Maksymalny rozmiar uploadu (np. załączniki)
+    client_max_body_size 10M;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}

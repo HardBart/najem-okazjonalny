@@ -26,6 +26,7 @@ function OrderFormContent() {
   const [appliedCode, setAppliedCode] = useState<string>(searchParams.get('kod') || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAllFeatures, setShowAllFeatures] = useState(false);
 
   const toggleAddon = (id: string) => {
     setSelectedAddons((prev) =>
@@ -476,18 +477,27 @@ function OrderFormContent() {
                   <div className="pt-4 border-t-2 border-navy-100">
                     <div className="text-sm text-navy-600 mb-2">W pakiecie:</div>
                     <ul className="space-y-2">
-                      {selectedPackage.features.slice(0, 3).map((feature, idx) => (
+                      {(showAllFeatures
+                        ? selectedPackage.features
+                        : selectedPackage.features.slice(0, 3)
+                      ).map((feature, idx) => (
                         <li key={idx} className="flex items-start space-x-2 text-sm">
                           <Check className="w-4 h-4 text-gold-600 flex-shrink-0 mt-0.5" />
                           <span className="text-navy-700">{feature}</span>
                         </li>
                       ))}
-                      {selectedPackage.features.length > 3 && (
-                        <li className="text-sm text-navy-600 pl-6">
-                          ... i {selectedPackage.features.length - 3} więcej
-                        </li>
-                      )}
                     </ul>
+                    {selectedPackage.features.length > 3 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllFeatures((v) => !v)}
+                        className="mt-2 text-sm font-medium text-gold-600 hover:text-gold-700"
+                      >
+                        {showAllFeatures
+                          ? 'Zwiń'
+                          : `Pokaż wszystko (jeszcze ${selectedPackage.features.length - 3})`}
+                      </button>
+                    )}
                   </div>
 
                   <div className="pt-4 border-t-2 border-navy-100">

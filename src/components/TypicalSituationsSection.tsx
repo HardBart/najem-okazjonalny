@@ -16,42 +16,42 @@ import {
 const SITUATIONS = [
   {
     icon: Users,
-    title: 'Nie masz rodziny w Polsce',
+    title: 'Nie masz rodziny w Polsce.',
     text: 'Nie masz kogo poprosić o adres do oświadczenia? Zapewniamy go bez angażowania bliskich.',
   },
   {
     icon: Home,
-    title: 'Wynajmujący wymaga najmu okazjonalnego',
+    title: 'Wynajmujący wymaga najmu okazjonalnego.',
     text: 'Właściciel mieszkania zgodzi się podpisać umowę tylko w formie najmu okazjonalnego. Dostarczymy brakujące dokumenty.',
   },
   {
     icon: Zap,
-    title: 'Potrzebujesz dokumentów na już',
+    title: 'Potrzebujesz dokumentów na już.',
     text: 'Podpisanie umowy za kilka dni? Realizujemy komplet dokumentów nawet w 24 godziny.',
   },
   {
     icon: Truck,
-    title: 'Przeprowadzasz się do innego miasta',
+    title: 'Przeprowadzasz się do innego miasta.',
     text: 'Zmieniasz miasto i nie znasz tam nikogo. Adres w oświadczeniu może być w dowolnej części Polski.',
   },
   {
     icon: Plane,
-    title: 'Wróciłeś z zagranicy',
+    title: 'Wróciłeś z zagranicy.',
     text: 'Po latach za granicą nie masz aktualnego zaplecza w kraju. Załatwiamy formalności od ręki.',
   },
   {
     icon: GraduationCap,
-    title: 'Jesteś studentem',
+    title: 'Jesteś studentem.',
     text: 'Wynajmujesz pierwsze mieszkanie i właściciel prosi o najem okazjonalny. Pomożemy bez stresu.',
   },
   {
     icon: Globe,
-    title: 'Jesteś obcokrajowcem',
+    title: 'Jesteś obcokrajowcem.',
     text: 'Mieszkasz i pracujesz w Polsce, ale nie masz tu rodziny. Przygotujemy komplet dokumentów po polsku.',
   },
   {
     icon: Building2,
-    title: 'Zarządzasz najmem zawodowo',
+    title: 'Zarządzasz najmem zawodowo.',
     text: 'Obsługujesz wiele lokali i potrzebujesz sprawdzonego partnera do dokumentów najmu okazjonalnego.',
   },
 ];

@@ -45,10 +45,10 @@ export default function CTABand({
 
           <div className="flex-shrink-0">
             <button
-              onClick={() => router.push('/zamowienie')}
+              onClick={() => router.push('/#pakiety')}
               className="inline-flex items-center justify-center px-8 py-4 bg-gold-500 text-navy-900 font-bold rounded-lg hover:bg-gold-600 transition-all shadow-lg hover:shadow-xl whitespace-nowrap"
             >
-              Zamów online
+              Wybierz pakiet
               <ArrowRight className="w-5 h-5 ml-2" />
             </button>
           </div>

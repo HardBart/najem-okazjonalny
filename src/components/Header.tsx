@@ -48,7 +48,7 @@ export default function Header() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="primary" size="sm" onClick={() => router.push('/zamowienie')}>
+            <Button variant="primary" size="sm" onClick={() => router.push('/#pakiety')}>
               Zamów teraz
             </Button>
           </div>
@@ -87,7 +87,7 @@ export default function Header() {
                   fullWidth
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    router.push('/zamowienie');
+                    router.push('/#pakiety');
                   }}
                 >
                   Zamów teraz

@@ -10,6 +10,24 @@
 
 ---
 
+## 🚀 WDROŻENIE PRODUKCYJNE (LIVE — czerwiec 2026)
+
+Strona działa na **Hostinger VPS** (`72.60.18.217`, Ubuntu 24.04, Node v24) OBOK innych stron
+(sprzeciwnakaz.pl, panel., stats., spadek — **ich NIE ruszać**).
+
+- **Kod:** GitHub `HardBart/najem-okazjonalny` (public). Na serwerze: `/var/www/najemokazjonalny24`.
+- **Proces:** PM2 `najemokazjonalny24`, port **3002** (`pm2 start npm --name najemokazjonalny24 -- start -- -p 3002`; `pm2 save` zrobione).
+- **Reverse proxy:** nginx → `/etc/nginx/sites-available/najemokazjonalny24.com` → 127.0.0.1:3002.
+- **SSL:** Let's Encrypt (certbot, auto-renew). HTTPS OK.
+- **TRYB „W BUDOWIE" (aktywny):** nginx zwraca 503 + `/var/www/maintenance/index.html`.
+  - **Podgląd właściciela:** `https://najemokazjonalny24.com/podglad-zofihel` → ustawia ciasteczko `preview=ZOFIHEL2026` → widać prawdziwą stronę.
+  - **Zdjęcie „budowy":** w configu nginx usuń linię `if ($cookie_preview != "ZOFIHEL2026") { return 503; }`, potem `nginx -t && systemctl reload nginx`.
+- **`.env` na serwerze** (NIE w repo): NEXT_PUBLIC_*, JWT/CRON/ADMIN ustawione. Hasło admina: `lbf82ksv1jp6`.
+- **Aktualizacja kodu:** `cd /var/www/najemokazjonalny24 && git pull && npm install && npm run build && pm2 reload najemokazjonalny24`.
+- ⚠️ **DO ZROBIENIA:** `pm2 startup` (autostart po reboot); wpiąć klucze **P24 / Resend / InPost** do `.env` → `npm run build` → `pm2 reload`; cron przypomnień (crontab z CRON_SECRET); na końcu zdjąć „budowę".
+
+---
+
 ## ✅ CO JUŻ ZROBIONE
 
 ### Strona główna (CRO/UX) — `src/app/page.tsx`

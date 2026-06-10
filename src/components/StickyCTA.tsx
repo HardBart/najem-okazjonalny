@@ -48,8 +48,8 @@ export default function StickyCTA() {
                 Zamów online — zajmiemy się resztą
               </div>
             </div>
-            <Button variant="secondary" size="sm" onClick={() => router.push('/zamowienie')}>
-              Zamów online
+            <Button variant="secondary" size="sm" onClick={() => router.push('/#pakiety')}>
+              Wybierz pakiet
             </Button>
           </div>
         </div>

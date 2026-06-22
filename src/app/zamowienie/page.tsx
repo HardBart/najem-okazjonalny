@@ -6,17 +6,25 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Button from '@/components/Button';
 import { packages, getPackageById } from '@/lib/packages';
-import { sumAddons, getAddonById, addonsForPackage } from '@/lib/addons';
+import { sumAddons, getAddonById, addonsForPackage, courierSurchargeFor } from '@/lib/addons';
 import { getDiscount, discountAmountFor } from '@/lib/discounts';
 import { LEGAL } from '@/lib/legal';
-import { formatPrice, generateOrderId, validatePESEL } from '@/lib/utils';
+import { formatPrice, generateOrderId, validatePESEL, validateNIP } from '@/lib/utils';
 import { Package } from '@/types';
 import DeliverySection, { DeliveryValue } from '@/components/DeliverySection';
 import { Check, AlertCircle, Plus } from 'lucide-react';
+import { useT, useLanguage } from '@/lib/i18n/LanguageProvider';
+
+interface AddonTr { name: string; description: string; highlights?: string[] }
+interface PkgTr { features: string[] }
 
 function OrderFormContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const t = useT();
+  const { tx } = useLanguage();
+  const addonsTr = tx<Record<string, AddonTr>>('addonsData');
+  const pkgTr = tx<Record<string, PkgTr>>('packagesData');
   const packageId = searchParams.get('pakiet') || 'standard';
 
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
@@ -38,7 +46,10 @@ function OrderFormContent() {
   const availableAddons = selectedPackage ? addonsForPackage(selectedPackage.id) : [];
 
   const addonsTotal = sumAddons(selectedAddons);
-  const baseTotal = (selectedPackage?.price ?? 0) + addonsTotal;
+  // Kurier w cenie w Premium i Komplet; w Standard pod adres za dopłatą.
+  const courierSurcharge = selectedPackage ? courierSurchargeFor(selectedPackage.id, 'kurier') : 0;
+  const deliverySurcharge = selectedPackage ? courierSurchargeFor(selectedPackage.id, delivery.method) : 0;
+  const baseTotal = (selectedPackage?.price ?? 0) + addonsTotal + deliverySurcharge;
   const appliedDiscount = appliedCode ? getDiscount(appliedCode) : null;
   const discountValue = appliedDiscount ? discountAmountFor(baseTotal, appliedCode) : 0;
   const orderTotal = baseTotal - discountValue;
@@ -50,12 +61,19 @@ function OrderFormContent() {
     phone: '',
     pesel: '',
     currentAddress: '',
-    desiredCity: '',
     rentalPurpose: '',
     termsConsent: false,
     privacyConsent: false,
     immediateServiceConsent: false,
+    serviceDisclaimerConsent: false,
     marketingConsent: false,
+    // Dokument sprzedaży
+    wantInvoice: false,
+    invoiceBuyerType: 'company' as 'company' | 'person',
+    invoiceCompanyName: '',
+    invoiceNip: '',
+    invoiceBuyerName: '',
+    invoiceAddress: '',
   });
 
   useEffect(() => {
@@ -80,26 +98,47 @@ function OrderFormContent() {
 
     // Validation
     if (!validatePESEL(formData.pesel)) {
-      setError('Podany numer PESEL jest nieprawidłowy');
+      setError(t('order.errPesel'));
       return;
     }
 
-    if (!formData.termsConsent || !formData.privacyConsent || !formData.immediateServiceConsent) {
-      setError('Musisz zaakceptować wymagane zgody');
+    if (!formData.termsConsent || !formData.privacyConsent || !formData.immediateServiceConsent || !formData.serviceDisclaimerConsent) {
+      setError(t('order.errConsents'));
       return;
     }
 
     // Walidacja dostawy
     if (delivery.method === 'paczkomat' && !delivery.pointCode?.trim()) {
-      setError('Podaj kod paczkomatu InPost');
+      setError(t('order.errPaczkomat'));
       return;
     }
     if (
       delivery.method === 'kurier' &&
       (!delivery.recipientName?.trim() || !delivery.street?.trim() || !delivery.postalCode?.trim() || !delivery.city?.trim())
     ) {
-      setError('Uzupełnij dane do wysyłki kurierskiej');
+      setError(t('order.errKurier'));
       return;
+    }
+
+    // Walidacja danych do faktury (gdy zaznaczono)
+    if (formData.wantInvoice) {
+      if (!formData.invoiceAddress.trim()) {
+        setError(t('order.invoiceForm.errData'));
+        return;
+      }
+      if (formData.invoiceBuyerType === 'company') {
+        if (!formData.invoiceCompanyName.trim()) {
+          setError(t('order.invoiceForm.errData'));
+          return;
+        }
+        if (!validateNIP(formData.invoiceNip)) {
+          setError(t('order.invoiceForm.errNip'));
+          return;
+        }
+      } else if (!formData.invoiceBuyerName.trim()) {
+        setError(t('order.invoiceForm.errData'));
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -120,16 +159,34 @@ function OrderFormContent() {
         },
         rentalData: {
           currentAddress: formData.currentAddress,
-          desiredCity: formData.desiredCity,
           rentalPurpose: formData.rentalPurpose,
         },
+        invoice: {
+          wantInvoice: formData.wantInvoice,
+          buyerType: formData.wantInvoice ? formData.invoiceBuyerType : undefined,
+          companyName:
+            formData.wantInvoice && formData.invoiceBuyerType === 'company'
+              ? formData.invoiceCompanyName
+              : undefined,
+          nip:
+            formData.wantInvoice && formData.invoiceBuyerType === 'company'
+              ? formData.invoiceNip.replace(/[\s-]/g, '')
+              : undefined,
+          buyerName:
+            formData.wantInvoice && formData.invoiceBuyerType === 'person'
+              ? formData.invoiceBuyerName
+              : undefined,
+          address: formData.wantInvoice ? formData.invoiceAddress : undefined,
+        },
         regulaminVersion: LEGAL.regulaminVersion,
+        politykaVersion: LEGAL.politykaVersion,
         discountCode: appliedDiscount ? appliedCode : undefined,
         delivery,
         consents: {
           terms: formData.termsConsent,
           privacy: formData.privacyConsent,
           immediateService: formData.immediateServiceConsent,
+          serviceDisclaimer: formData.serviceDisclaimerConsent,
           marketing: formData.marketingConsent,
         },
       };
@@ -146,17 +203,17 @@ function OrderFormContent() {
         // Redirect to PayU
         window.location.href = data.redirectUrl;
       } else {
-        setError(data.error || 'Wystąpił błąd podczas przetwarzania zamówienia');
+        setError(data.error || t('order.errOrder'));
         setIsSubmitting(false);
       }
     } catch (err) {
-      setError('Wystąpił błąd połączenia. Spróbuj ponownie.');
+      setError(t('order.errConnection'));
       setIsSubmitting(false);
     }
   };
 
   if (!selectedPackage) {
-    return <div className="min-h-screen flex items-center justify-center">Ładowanie...</div>;
+    return <div className="min-h-screen flex items-center justify-center">{t('order.loading')}</div>;
   }
 
   return (
@@ -168,10 +225,10 @@ function OrderFormContent() {
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-navy-900 mb-4">
-              Formularz zamówienia
+              {t('order.title')}
             </h1>
             <p className="text-lg text-navy-700">
-              Wypełnij formularz, aby przejść do płatności
+              {t('order.subtitle')}
             </p>
           </div>
 
@@ -180,7 +237,7 @@ function OrderFormContent() {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <h2 className="text-2xl font-bold text-navy-900 mb-6">
-                  Twoje dane
+                  {t('order.yourData')}
                 </h2>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -188,7 +245,7 @@ function OrderFormContent() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-navy-900 mb-2">
-                        Imię *
+                        {t('order.firstName')}
                       </label>
                       <input
                         type="text"
@@ -200,7 +257,7 @@ function OrderFormContent() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-navy-900 mb-2">
-                        Nazwisko *
+                        {t('order.lastName')}
                       </label>
                       <input
                         type="text"
@@ -214,7 +271,7 @@ function OrderFormContent() {
 
                   <div>
                     <label className="block text-sm font-medium text-navy-900 mb-2">
-                      Adres e-mail *
+                      {t('order.email')}
                     </label>
                     <input
                       type="email"
@@ -228,7 +285,7 @@ function OrderFormContent() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-navy-900 mb-2">
-                        Numer telefonu *
+                        {t('order.phone')}
                       </label>
                       <input
                         type="tel"
@@ -241,7 +298,7 @@ function OrderFormContent() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-navy-900 mb-2">
-                        PESEL *
+                        {t('order.pesel')}
                       </label>
                       <input
                         type="text"
@@ -258,13 +315,13 @@ function OrderFormContent() {
                   {/* Rental Data */}
                   <div className="pt-6 border-t-2 border-navy-100">
                     <h3 className="text-xl font-bold text-navy-900 mb-4">
-                      Dane dotyczące najmu
+                      {t('order.rentalData')}
                     </h3>
 
                     <div className="space-y-6">
                       <div>
                         <label className="block text-sm font-medium text-navy-900 mb-2">
-                          Obecny adres zamieszkania *
+                          {t('order.currentAddress')}
                         </label>
                         <input
                           type="text"
@@ -272,27 +329,13 @@ function OrderFormContent() {
                           value={formData.currentAddress}
                           onChange={(e) => setFormData({ ...formData, currentAddress: e.target.value })}
                           className="w-full px-4 py-3 border-2 border-navy-200 rounded-lg focus:border-gold-500 focus:outline-none"
-                          placeholder="ul. Przykładowa 12/3, 00-001 Warszawa"
+                          placeholder={t('order.currentAddressPlaceholder')}
                         />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-navy-900 mb-2">
-                          Preferowane miasto dla adresu *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={formData.desiredCity}
-                          onChange={(e) => setFormData({ ...formData, desiredCity: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-navy-200 rounded-lg focus:border-gold-500 focus:outline-none"
-                          placeholder="np. Warszawa, Kraków, Wrocław"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-navy-900 mb-2">
-                          Cel najmu *
+                          {t('order.rentalPurpose')}
                         </label>
                         <textarea
                           required
@@ -300,7 +343,7 @@ function OrderFormContent() {
                           value={formData.rentalPurpose}
                           onChange={(e) => setFormData({ ...formData, rentalPurpose: e.target.value })}
                           className="w-full px-4 py-3 border-2 border-navy-200 rounded-lg focus:border-gold-500 focus:outline-none resize-none"
-                          placeholder="Krótki opis celu najmu okazjonalnego"
+                          placeholder={t('order.rentalPurposePlaceholder')}
                         />
                       </div>
                     </div>
@@ -309,21 +352,24 @@ function OrderFormContent() {
                   {/* Cross-sell: dodatki opcjonalne */}
                   <div className="pt-6 border-t-2 border-navy-100">
                     <h3 className="text-xl font-bold text-navy-900 mb-1">
-                      Przydatne dodatki <span className="text-sm font-normal text-navy-500">(opcjonalnie)</span>
+                      {t('order.addonsTitle')} <span className="text-sm font-normal text-navy-500">{t('order.addonsOptional')}</span>
                     </h3>
                     <p className="text-sm text-navy-600 mb-4">
-                      Zaznacz, jeśli chcesz dołączyć je do zamówienia. Pokazujemy tylko te, których
-                      nie ma jeszcze w wybranym pakiecie.
+                      {t('order.addonsHint')}
                     </p>
                     <div className="space-y-3">
                       {availableAddons.map((addon) => {
                         const checked = selectedAddons.includes(addon.id);
+                        const isBundle = !!addon.featured;
+                        const atr = addonsTr[addon.id] || { name: addon.name, description: addon.description, highlights: addon.highlights };
                         return (
                           <label
                             key={addon.id}
                             className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                               checked
                                 ? 'border-gold-500 bg-gold-50'
+                                : isBundle
+                                ? 'border-gold-400 bg-gold-50/40 hover:border-gold-500'
                                 : 'border-navy-200 hover:border-gold-300'
                             }`}
                           >
@@ -334,14 +380,29 @@ function OrderFormContent() {
                               className="mt-1 w-4 h-4 accent-gold-600"
                             />
                             <span className="flex-grow">
+                              {isBundle && (
+                                <span className="inline-flex items-center gap-1 mb-1.5 px-2 py-0.5 rounded-full bg-navy-900 text-gold-300 text-[11px] font-bold uppercase tracking-wide">
+                                  {t('order.bundleBadge')}
+                                </span>
+                              )}
                               <span className="flex items-center justify-between gap-2">
-                                <span className="font-semibold text-navy-900 text-sm">{addon.name}</span>
+                                <span className="font-semibold text-navy-900 text-sm">{atr.name}</span>
                                 <span className="flex items-center text-gold-700 font-bold text-sm whitespace-nowrap">
                                   <Plus className="w-3.5 h-3.5" />
                                   {formatPrice(addon.price)}
                                 </span>
                               </span>
-                              <span className="block text-xs text-navy-600 mt-1">{addon.description}</span>
+                              <span className="block text-xs text-navy-600 mt-1">{atr.description}</span>
+                              {atr.highlights && atr.highlights.length > 0 && (
+                                <span className="mt-2 grid gap-1">
+                                  {atr.highlights.map((item) => (
+                                    <span key={item} className="flex items-start gap-1.5 text-xs text-navy-700">
+                                      <Check className="w-3.5 h-3.5 text-gold-600 mt-0.5 shrink-0" />
+                                      <span>{item}</span>
+                                    </span>
+                                  ))}
+                                </span>
+                              )}
                             </span>
                           </label>
                         );
@@ -354,7 +415,104 @@ function OrderFormContent() {
                     packageId={selectedPackage.id}
                     value={delivery}
                     onChange={setDelivery}
+                    courierSurcharge={courierSurcharge}
                   />
+
+                  {/* Dokument sprzedaży: faktura / rachunek */}
+                  <div className="pt-6 border-t-2 border-navy-100">
+                    <h3 className="text-xl font-bold text-navy-900 mb-3">{t('order.invoiceForm.title')}</h3>
+                    <label className="flex items-start gap-3 mb-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.wantInvoice}
+                        onChange={(e) => setFormData({ ...formData, wantInvoice: e.target.checked })}
+                        className="mt-1 w-4 h-4 accent-gold-600"
+                      />
+                      <span className="text-sm font-medium text-navy-900">{t('order.invoiceForm.want')}</span>
+                    </label>
+                    <p className="text-xs text-navy-500 mb-4">{t('order.invoiceForm.note')}</p>
+
+                    {formData.wantInvoice && (
+                      <div className="space-y-4 bg-navy-50 rounded-xl p-4">
+                        <div className="flex flex-wrap gap-3">
+                          {(['company', 'person'] as const).map((bt) => (
+                            <button
+                              key={bt}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, invoiceBuyerType: bt })}
+                              className={`px-4 py-2 rounded-lg border-2 text-sm font-semibold transition-all ${
+                                formData.invoiceBuyerType === bt
+                                  ? 'border-gold-500 bg-gold-50 text-navy-900'
+                                  : 'border-navy-200 text-navy-700 hover:border-gold-300'
+                              }`}
+                            >
+                              {bt === 'company' ? t('order.invoiceForm.company') : t('order.invoiceForm.person')}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                invoiceAddress: formData.invoiceAddress || formData.currentAddress,
+                                invoiceBuyerName:
+                                  formData.invoiceBuyerName ||
+                                  `${formData.firstName} ${formData.lastName}`.trim(),
+                              })
+                            }
+                            className="ml-auto text-sm text-gold-700 hover:text-gold-800 font-medium underline"
+                          >
+                            {t('order.invoiceForm.copyFromForm')}
+                          </button>
+                        </div>
+
+                        {formData.invoiceBuyerType === 'company' ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-navy-900 mb-2">{t('order.invoiceForm.companyName')}</label>
+                              <input
+                                type="text"
+                                value={formData.invoiceCompanyName}
+                                onChange={(e) => setFormData({ ...formData, invoiceCompanyName: e.target.value })}
+                                className="w-full px-4 py-3 border-2 border-navy-200 rounded-lg focus:border-gold-500 focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-navy-900 mb-2">{t('order.invoiceForm.nip')}</label>
+                              <input
+                                type="text"
+                                value={formData.invoiceNip}
+                                onChange={(e) => setFormData({ ...formData, invoiceNip: e.target.value })}
+                                className="w-full px-4 py-3 border-2 border-navy-200 rounded-lg focus:border-gold-500 focus:outline-none"
+                                placeholder="1234567890"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="block text-sm font-medium text-navy-900 mb-2">{t('order.invoiceForm.buyerName')}</label>
+                            <input
+                              type="text"
+                              value={formData.invoiceBuyerName}
+                              onChange={(e) => setFormData({ ...formData, invoiceBuyerName: e.target.value })}
+                              className="w-full px-4 py-3 border-2 border-navy-200 rounded-lg focus:border-gold-500 focus:outline-none"
+                            />
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="block text-sm font-medium text-navy-900 mb-2">{t('order.invoiceForm.address')}</label>
+                          <input
+                            type="text"
+                            value={formData.invoiceAddress}
+                            onChange={(e) => setFormData({ ...formData, invoiceAddress: e.target.value })}
+                            className="w-full px-4 py-3 border-2 border-navy-200 rounded-lg focus:border-gold-500 focus:outline-none"
+                            placeholder="ul. Przykładowa 1, 00-001 Warszawa"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Consents */}
                   <div className="pt-6 border-t-2 border-navy-100 space-y-4">
@@ -372,11 +530,11 @@ function OrderFormContent() {
                         className="mt-1 w-4 h-4"
                       />
                       <label htmlFor="terms" className="text-sm text-navy-700">
-                        Akceptuję{' '}
+                        {t('order.consentTermsPre')}
                         <a href="/regulamin" target="_blank" className="text-gold-600 hover:underline">
-                          regulamin
-                        </a>{' '}
-                        świadczenia usług *
+                          {t('order.consentTermsLink')}
+                        </a>
+                        {t('order.consentTermsPost')}
                       </label>
                     </div>
 
@@ -390,15 +548,15 @@ function OrderFormContent() {
                         className="mt-1 w-4 h-4"
                       />
                       <label htmlFor="privacy" className="text-sm text-navy-700">
-                        Wyrażam zgodę na przetwarzanie moich danych osobowych zgodnie z{' '}
+                        {t('order.consentPrivacyPre')}
                         <a href="/polityka-prywatnosci" target="_blank" className="text-gold-600 hover:underline">
-                          polityką prywatności
-                        </a>{' '}
-                        oraz{' '}
+                          {t('order.consentPrivacyLink')}
+                        </a>
+                        {t('order.consentPrivacyMid')}
                         <a href="/rodo" target="_blank" className="text-gold-600 hover:underline">
-                          klauzulą RODO
-                        </a>{' '}
-                        *
+                          {t('order.consentRodoLink')}
+                        </a>
+                        {t('order.consentPrivacyPost')}
                       </label>
                     </div>
 
@@ -412,9 +570,21 @@ function OrderFormContent() {
                         className="mt-1 w-4 h-4"
                       />
                       <label htmlFor="immediate" className="text-sm text-navy-700">
-                        Żądam rozpoczęcia realizacji usługi natychmiast (przed upływem terminu do
-                        odstąpienia od umowy) i przyjmuję do wiadomości, że po jej pełnym wykonaniu
-                        utracę prawo odstąpienia od umowy. *
+                        {t('order.consentImmediate')}
+                      </label>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <input
+                        type="checkbox"
+                        id="serviceDisclaimer"
+                        required
+                        checked={formData.serviceDisclaimerConsent}
+                        onChange={(e) => setFormData({ ...formData, serviceDisclaimerConsent: e.target.checked })}
+                        className="mt-1 w-4 h-4"
+                      />
+                      <label htmlFor="serviceDisclaimer" className="text-sm text-navy-700">
+                        {t('order.consentServiceDisclaimer')}
                       </label>
                     </div>
 
@@ -427,7 +597,7 @@ function OrderFormContent() {
                         className="mt-1 w-4 h-4"
                       />
                       <label htmlFor="marketing" className="text-sm text-navy-700">
-                        Wyrażam zgodę na otrzymywanie informacji handlowych drogą elektroniczną
+                        {t('order.consentMarketing')}
                       </label>
                     </div>
                   </div>
@@ -446,16 +616,14 @@ function OrderFormContent() {
                     size="lg"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Przetwarzanie...' : 'Zamawiam i płacę'}
+                    {isSubmitting ? t('order.processing') : t('order.submit')}
                   </Button>
 
                   <p className="text-sm text-navy-600 text-center">
-                    Po kliknięciu zostaniesz przekierowany do bezpiecznej płatności {LEGAL.paymentProvider}.
+                    {t('order.redirectNote').replace('{provider}', LEGAL.paymentProvider)}
                   </p>
                   <p className="text-xs text-navy-500 text-center">
-                    Usługa polega na przygotowaniu kompletu dokumentów do najmu okazjonalnego i nie
-                    stanowi porady prawnej. Klient odpowiada za poprawność podanych danych oraz sposób
-                    wykorzystania dokumentów.
+                    {t('order.disclaimer')}
                   </p>
                 </form>
               </div>
@@ -465,44 +633,45 @@ function OrderFormContent() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-24">
                 <h3 className="text-xl font-bold text-navy-900 mb-4">
-                  Podsumowanie zamówienia
+                  {t('order.summaryTitle')}
                 </h3>
 
                 <div className="space-y-4">
                   <div>
-                    <div className="text-sm text-navy-600 mb-1">Wybrany pakiet</div>
+                    <div className="text-sm text-navy-600 mb-1">{t('order.selectedPackage')}</div>
                     <div className="font-semibold text-navy-900">{selectedPackage.name}</div>
                   </div>
 
                   <div className="pt-4 border-t-2 border-navy-100">
-                    <div className="text-sm text-navy-600 mb-2">W pakiecie:</div>
+                    <div className="text-sm text-navy-600 mb-2">{t('order.inPackage')}</div>
                     <ul className="space-y-2">
-                      {(showAllFeatures
-                        ? selectedPackage.features
-                        : selectedPackage.features.slice(0, 3)
-                      ).map((feature, idx) => (
-                        <li key={idx} className="flex items-start space-x-2 text-sm">
-                          <Check className="w-4 h-4 text-gold-600 flex-shrink-0 mt-0.5" />
-                          <span className="text-navy-700">{feature}</span>
-                        </li>
-                      ))}
+                      {(() => {
+                        const features = pkgTr[selectedPackage.id]?.features || selectedPackage.features;
+                        const shown = showAllFeatures ? features : features.slice(0, 3);
+                        return shown.map((feature, idx) => (
+                          <li key={idx} className="flex items-start space-x-2 text-sm">
+                            <Check className="w-4 h-4 text-gold-600 flex-shrink-0 mt-0.5" />
+                            <span className="text-navy-700">{feature}</span>
+                          </li>
+                        ));
+                      })()}
                     </ul>
-                    {selectedPackage.features.length > 3 && (
+                    {(pkgTr[selectedPackage.id]?.features || selectedPackage.features).length > 3 && (
                       <button
                         type="button"
                         onClick={() => setShowAllFeatures((v) => !v)}
                         className="mt-2 text-sm font-medium text-gold-600 hover:text-gold-700"
                       >
                         {showAllFeatures
-                          ? 'Zwiń'
-                          : `Pokaż wszystko (jeszcze ${selectedPackage.features.length - 3})`}
+                          ? t('order.collapse')
+                          : t('order.showAll').replace('{n}', String((pkgTr[selectedPackage.id]?.features || selectedPackage.features).length - 3))}
                       </button>
                     )}
                   </div>
 
                   <div className="pt-4 border-t-2 border-navy-100">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-navy-700">Pakiet {selectedPackage.name}:</span>
+                      <span className="text-navy-700">{t('pkg.packagePrefix')} {selectedPackage.name}:</span>
                       <span className="font-semibold text-navy-900">
                         {formatPrice(selectedPackage.price)}
                       </span>
@@ -515,16 +684,23 @@ function OrderFormContent() {
                           .filter((a): a is NonNullable<typeof a> => Boolean(a))
                           .map((a) => (
                           <div key={a.id} className="flex justify-between items-start text-sm gap-2">
-                            <span className="text-navy-600">+ {a.name}</span>
+                            <span className="text-navy-600">+ {addonsTr[a.id]?.name || a.name}</span>
                             <span className="text-navy-700 whitespace-nowrap">{formatPrice(a.price)}</span>
                           </div>
                         ))}
                       </div>
                     )}
 
+                    {deliverySurcharge > 0 && (
+                      <div className="flex justify-between items-start text-sm gap-2 mb-2">
+                        <span className="text-navy-600">{t('order.courierSurcharge')}</span>
+                        <span className="text-navy-700 whitespace-nowrap">{formatPrice(deliverySurcharge)}</span>
+                      </div>
+                    )}
+
                     {/* Kod rabatowy */}
                     <div className="py-3 my-2 border-t border-navy-100">
-                      <label className="block text-xs text-navy-600 mb-1">Kod rabatowy</label>
+                      <label className="block text-xs text-navy-600 mb-1">{t('order.discountCode')}</label>
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -538,11 +714,11 @@ function OrderFormContent() {
                           onClick={() => setAppliedCode(discountInput)}
                           className="px-4 py-2 bg-navy-900 text-white text-sm font-semibold rounded-lg hover:bg-navy-800 transition-colors whitespace-nowrap"
                         >
-                          Zastosuj
+                          {t('order.applyCode')}
                         </button>
                       </div>
                       {appliedCode && !appliedDiscount && (
-                        <p className="text-xs text-red-600 mt-1">Kod nieprawidłowy lub nieaktywny.</p>
+                        <p className="text-xs text-red-600 mt-1">{t('order.codeInvalid')}</p>
                       )}
                       {appliedDiscount && (
                         <div className="flex justify-between items-center text-sm text-green-700 mt-2">
@@ -553,7 +729,7 @@ function OrderFormContent() {
                     </div>
 
                     <div className="flex justify-between items-center text-lg font-bold pt-2 border-t border-navy-100">
-                      <span className="text-navy-900">Do zapłaty:</span>
+                      <span className="text-navy-900">{t('order.toPay')}</span>
                       <span className="text-gold-600">{formatPrice(orderTotal)}</span>
                     </div>
                   </div>
@@ -564,7 +740,7 @@ function OrderFormContent() {
                       className="text-sm text-gold-600 hover:text-gold-700 font-medium"
                       onClick={() => router.push('/#pakiety')}
                     >
-                      Zmień pakiet →
+                      {t('order.changePackage')}
                     </button>
                   </div>
                 </div>

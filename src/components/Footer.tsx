@@ -1,9 +1,15 @@
+'use client';
+
 import Link from 'next/link';
-import { Phone, Mail, Facebook, Linkedin, KeyRound } from 'lucide-react';
+import { Phone, Mail, KeyRound } from 'lucide-react';
 import { company, fullAddress } from '@/lib/company';
+import { useT } from '@/lib/i18n/LanguageProvider';
+import { useCookieConsent } from '@/lib/cookie-consent/CookieConsent';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const t = useT();
+  const { openSettings } = useCookieConsent();
 
   return (
     <footer className="bg-navy-900 text-white">
@@ -18,8 +24,7 @@ export default function Footer() {
               <span className="text-xl font-bold">Najem Okazjonalny</span>
             </div>
             <p className="text-navy-300 max-w-md text-sm leading-relaxed">
-              Profesjonalne wsparcie przy najmie okazjonalnym — adres do umowy, oświadczenie
-              właściciela lokalu i obsługa notarialna. Działamy w całej Polsce.
+              {t('footer.tagline')}
             </p>
             <p className="text-navy-400 text-xs mt-4 leading-relaxed">
               {company.legalName}<br />
@@ -30,36 +35,36 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold mb-4 text-gold-500">Szybkie linki</h3>
+            <h3 className="font-semibold mb-4 text-gold-500">{t('footer.quickLinks')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <a href="/#pakiety" className="text-navy-300 hover:text-white transition-colors">
-                  Pakiety
+                  {t('footer.linkPackages')}
                 </a>
               </li>
               <li>
                 <Link href="/dla-wynajmujacych" className="text-navy-300 hover:text-white transition-colors">
-                  Dla wynajmujących
+                  {t('footer.linkLandlords')}
                 </Link>
               </li>
               <li>
                 <Link href="/obsluga-wielu-lokali" className="text-navy-300 hover:text-white transition-colors">
-                  Dla firm i inwestorów
+                  {t('footer.linkBusiness')}
                 </Link>
               </li>
               <li>
                 <Link href="/najem-okazjonalny" className="text-navy-300 hover:text-white transition-colors">
-                  Najem wg miasta
+                  {t('footer.linkCities')}
                 </Link>
               </li>
               <li>
                 <Link href="/blog" className="text-navy-300 hover:text-white transition-colors">
-                  Blog
+                  {t('footer.linkBlog')}
                 </Link>
               </li>
               <li>
                 <a href="/#faq" className="text-navy-300 hover:text-white transition-colors">
-                  FAQ
+                  {t('footer.linkFaq')}
                 </a>
               </li>
             </ul>
@@ -67,7 +72,7 @@ export default function Footer() {
 
           {/* Contact & Legal */}
           <div>
-            <h3 className="font-semibold mb-4 text-gold-500">Kontakt</h3>
+            <h3 className="font-semibold mb-4 text-gold-500">{t('footer.contact')}</h3>
             <ul className="space-y-3 text-sm">
               <li>
                 <a
@@ -89,22 +94,30 @@ export default function Footer() {
               </li>
             </ul>
             <div className="mt-6">
-              <h4 className="font-semibold mb-2 text-sm text-gold-500">Dokumenty prawne</h4>
+              <h4 className="font-semibold mb-2 text-sm text-gold-500">{t('footer.legalDocs')}</h4>
               <ul className="space-y-1 text-sm">
                 <li>
                   <Link href="/polityka-prywatnosci" className="text-navy-300 hover:text-white transition-colors">
-                    Polityka prywatności
+                    {t('footer.privacy')}
                   </Link>
                 </li>
                 <li>
                   <Link href="/regulamin" className="text-navy-300 hover:text-white transition-colors">
-                    Regulamin
+                    {t('footer.terms')}
                   </Link>
                 </li>
                 <li>
                   <Link href="/rodo" className="text-navy-300 hover:text-white transition-colors">
-                    RODO
+                    {t('footer.rodo')}
                   </Link>
+                </li>
+                <li>
+                  <button
+                    onClick={openSettings}
+                    className="text-navy-300 hover:text-white transition-colors text-left"
+                  >
+                    {t('cookies.manage')}
+                  </button>
                 </li>
               </ul>
             </div>
@@ -114,32 +127,14 @@ export default function Footer() {
         {/* Disclaimer */}
         <div className="mt-12 pt-8 border-t border-navy-800">
           <p className="text-navy-500 text-xs leading-relaxed mb-6">
-            Serwis nie świadczy pomocy prawnej ani doradztwa prawnego. Usługa polega na
-            przygotowaniu kompletu dokumentów do najmu okazjonalnego. Klient odpowiada za poprawność
-            podanych danych oraz sposób wykorzystania otrzymanych dokumentów.
+            {t('footer.disclaimer')}
           </p>
 
           {/* Bottom Bar */}
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-navy-400 text-sm">
-              © {currentYear} {company.legalName}. Wszelkie prawa zastrzeżone.
+              © {currentYear} {company.legalName}. {t('footer.rights')}
             </p>
-            <div className="flex space-x-4">
-              <a
-                href="#"
-                className="text-navy-400 hover:text-white transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="text-navy-400 hover:text-white transition-colors"
-                aria-label="LinkedIn"
-              >
-                <Linkedin className="w-5 h-5" />
-              </a>
-            </div>
           </div>
         </div>
       </div>

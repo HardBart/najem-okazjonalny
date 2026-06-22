@@ -10,41 +10,29 @@ import { Addon, PackageId } from '@/types';
  */
 export const addons: Addon[] = [
   {
-    id: 'umowa-wzor',
-    name: 'Wzór umowy najmu okazjonalnego',
-    description: 'Gotowy, edytowalny wzór umowy — wystarczy uzupełnić dane.',
-    price: 79,
-  },
-  {
-    id: 'instrukcja-us',
-    name: 'Instrukcja zgłoszenia do urzędu skarbowego',
-    description: 'Krok po kroku, jak zgłosić najem okazjonalny w 14 dni.',
-    price: 49,
-  },
-  {
-    id: 'protokol',
-    name: 'Protokół zdawczo-odbiorczy mieszkania (wzór)',
-    description: 'Gotowy wzór protokołu — zabezpiecza kaucję i stan lokalu przy przekazaniu mieszkania.',
-    price: 39,
+    id: 'pakiet-bezpieczny-najem',
+    name: 'Pakiet „Bezpieczny Najem”',
+    description:
+      'Komplet dokumentów najmu okazjonalnego — trzy edytowalne wzory gotowe do wydruku, opracowane przez praktyków rynku najmu. Obejmują wydanie lokalu, treść umowy i zgłoszenie do urzędu skarbowego.',
+    price: 129,
+    featured: true,
+    highlights: [
+      'Profesjonalna umowa najmu okazjonalnego (kilkanaście paragrafów).',
+      'Protokół zdawczo-odbiorczy — stan lokalu, liczniki, wyposażenie.',
+      'Instrukcja zgłoszenia do urzędu skarbowego (z e-Urzędem i checklistą).',
+    ],
   },
   {
     id: 'dodatkowe-egzemplarze',
     name: 'Dodatkowe egzemplarze dokumentów',
     description: 'Drugi papierowy komplet poświadczonych dokumentów wysłany na Twój adres.',
     price: 59,
-    includedIn: ['premium', 'vip'],
-  },
-  {
-    id: 'kurier',
-    name: 'Wysyłka kurierska priorytetowa',
-    description: 'Komplet dokumentów dostarczony kurierem priorytetowo, z numerem do śledzenia.',
-    price: 39,
-    includedIn: ['premium', 'vip'],
+    excludedFrom: ['basic'],
   },
   {
     id: 'ekspres',
     name: 'Realizacja ekspresowa (24h)',
-    description: 'Priorytetowe przygotowanie kompletu dokumentów w ciągu 24 godzin.',
+    description: 'Priorytetowe przygotowanie kompletu dokumentów w ciągu 24 godzin. Czas dotyczy przygotowania dokumentów i nie obejmuje czasu wysyłki.',
     price: 199,
     includedIn: ['premium', 'vip'],
   },
@@ -59,7 +47,17 @@ export function sumAddons(ids: string[] = []): number {
   return ids.reduce((sum, id) => sum + (getAddonById(id)?.price ?? 0), 0);
 }
 
-/** Dodatki dostępne dla danego pakietu (z pominięciem już wliczonych). */
+/** Dodatki dostępne dla danego pakietu (z pominięciem już wliczonych i wykluczonych). */
 export function addonsForPackage(packageId: PackageId): Addon[] {
-  return addons.filter((a) => !a.includedIn?.includes(packageId));
+  return addons.filter(
+    (a) => !a.includedIn?.includes(packageId) && !a.excludedFrom?.includes(packageId)
+  );
+}
+
+/** Dopłata za kuriera pod wskazany adres. Kurier jest w cenie w Premium i Komplet. */
+export const COURIER_SURCHARGE = 25;
+export function courierSurchargeFor(packageId: PackageId | string, method?: string): number {
+  if (method !== 'kurier') return 0;
+  if (packageId === 'premium' || packageId === 'vip') return 0;
+  return COURIER_SURCHARGE;
 }

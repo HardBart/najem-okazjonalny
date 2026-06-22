@@ -6,10 +6,12 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { CheckCircle, Mail, Phone } from 'lucide-react';
+import { useT } from '@/lib/i18n/LanguageProvider';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const t = useT();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-navy-50 to-white">
@@ -25,69 +27,43 @@ function SuccessContent() {
 
             {/* Title */}
             <h1 className="text-3xl md:text-4xl font-bold text-navy-900 mb-4">
-              Płatność zakończona pomyślnie!
+              {t('success.title')}
             </h1>
 
             {/* Order ID */}
             {orderId && (
               <div className="bg-navy-50 rounded-lg p-4 mb-6">
-                <p className="text-sm text-navy-600 mb-1">Numer zamówienia:</p>
+                <p className="text-sm text-navy-600 mb-1">{t('success.orderNumber')}</p>
                 <p className="text-xl font-bold text-navy-900">{orderId}</p>
               </div>
             )}
 
             {/* Description */}
             <p className="text-lg text-navy-700 mb-8 leading-relaxed">
-              Dziękujemy za złożenie zamówienia. Potwierdzenie zostało wysłane na podany
-              adres e-mail. W ciągu najbliższych godzin nasz zespół skontaktuje się z Tobą,
-              aby omówić szczegóły realizacji.
+              {t('success.desc')}
             </p>
 
             {/* Next Steps */}
             <div className="bg-gradient-to-br from-gold-50 to-white border-2 border-gold-200 rounded-xl p-6 mb-8 text-left">
               <h2 className="text-xl font-bold text-navy-900 mb-4">
-                Co dalej?
+                {t('success.whatNext')}
               </h2>
               <ol className="space-y-3 text-navy-700">
-                <li className="flex items-start space-x-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-gold-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    1
-                  </span>
-                  <span>
-                    Sprawdź swoją skrzynkę e-mail – przesłaliśmy potwierdzenie zamówienia
-                  </span>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-gold-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    2
-                  </span>
-                  <span>
-                    Nasz opiekun skontaktuje się z Tobą telefonicznie lub mailowo
-                  </span>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-gold-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    3
-                  </span>
-                  <span>
-                    Przygotujemy dokumenty i umówimy termin u notariusza
-                  </span>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <span className="flex-shrink-0 w-6 h-6 bg-gold-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    4
-                  </span>
-                  <span>
-                    Otrzymasz komplet dokumentów gotowych do użycia
-                  </span>
-                </li>
+                {[t('success.step1'), t('success.step2'), t('success.step3'), t('success.step4')].map((step, i) => (
+                  <li key={i} className="flex items-start space-x-3">
+                    <span className="flex-shrink-0 w-6 h-6 bg-gold-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                      {i + 1}
+                    </span>
+                    <span>{step}</span>
+                  </li>
+                ))}
               </ol>
             </div>
 
             {/* Contact Info */}
             <div className="border-t-2 border-navy-100 pt-8">
               <p className="text-navy-700 mb-4">
-                Masz pytania? Skontaktuj się z nami:
+                {t('success.questions')}
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
                 <a
@@ -110,7 +86,7 @@ function SuccessContent() {
                 href="/"
                 className="inline-block px-8 py-3 bg-navy-900 text-white font-semibold rounded-lg hover:bg-navy-800 transition-colors"
               >
-                Wróć na stronę główną
+                {t('success.backHome')}
               </Link>
             </div>
           </div>

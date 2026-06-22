@@ -24,7 +24,21 @@ Strona działa na **Hostinger VPS** (`72.60.18.217`, Ubuntu 24.04, Node v24) OBO
   - **Zdjęcie „budowy":** w configu nginx usuń linię `if ($cookie_preview != "ZOFIHEL2026") { return 503; }`, potem `nginx -t && systemctl reload nginx`.
 - **`.env` na serwerze** (NIE w repo): NEXT_PUBLIC_*, JWT/CRON/ADMIN ustawione. Hasło admina: `lbf82ksv1jp6`.
 - **Aktualizacja kodu:** `cd /var/www/najemokazjonalny24 && git pull && npm install && npm run build && pm2 reload najemokazjonalny24`.
-- ⚠️ **DO ZROBIENIA:** `pm2 startup` (autostart po reboot); wpiąć klucze **P24 / Resend / InPost** do `.env` → `npm run build` → `pm2 reload`; cron przypomnień (crontab z CRON_SECRET); na końcu zdjąć „budowę".
+- `pm2 startup` — ZROBIONE (autostart po reboot włączony) + `pm2 save`.
+
+### ▶️ NASTĘPNA SESJA — OD CZEGO ZACZĄĆ (kolejność)
+1. **Dokumenty do sprzedaży — wersja 1 gotowa, DO PRZEBUDOWY wg uwag klienta** (pliki .docx w `…\najem okazjonalny\Dokumenty najem okazjonalny\`, folder gitignored). **Model sprzedaży: pojedyncze dokumenty, NIE pakiety** (klient tak woli — pominąć sugestie pakietów/cen z ChatGPT).
+   - **Wzory klienta (do wykorzystania) wyciągnięte do tekstu:** `C:\Users\barto\Desktop\_t_protokol.txt`, `_t_regulamin.txt`, `_t_umowa.txt` (oryginały: `C:\Bartek\Biznesy\Nieruchomości\Wynajem\Umowy Dworcowa 41\Zofihel\`). UWAGA: umowa klienta to NIE najem okazjonalny — adaptować.
+   - **Protokół** (wg wzoru klienta): zostawić DUŻO wolnego miejsca na wyposażenie (NIE wypisywać mebli). Dodać: oświadczenie najemcy o zapoznaniu się ze stanem, sekcję „Zastane uszkodzenia”, klauzulę o prawidłowości odczytów liczników, załącznik „dokumentacja fotograficzna” (liczba zdjęć/data).
+   - **Instrukcja US:** format — str. 1 instrukcja, str. 2 wzór; dodać e-Urząd Skarbowy, „wypełnij tylko zaznaczone pola”, checklistę (umowa podpisana / akt notarialny / zgłoszenie wysłane / potwierdzenie zachowane).
+   - **Umowa najmu okazjonalnego (mocno rozbudować, 12–15 stron):** kary umowne (klucze/piloty), obowiązek udostępnienia lokalu (awarie/przeglądy), zakaz palenia, zwierzęta TAK/NIE, zakaz podnajmu (jest), doręczenia (e-mail/telefon/skuteczność), zasady wypowiedzenia, rozliczenie mediów (ryczałt/odczyty/termin), zgłaszanie usterek (termin), prace adaptacyjne (wiercenie/malowanie), odpowiedzialność za szkody (zużycie vs zniszczenia), klauzula RODO, komentarz rekomendujący poświadczenie notarialne adresu zastępczego. Wyciągnąć dobre zapisy z `_t_umowa.txt` i `_t_regulamin.txt`.
+   - Po przebudowie: weryfikacja prawna + wpięcie dostarczania (załącznik w mailu / link po opłaceniu).
+2. **Wrzucić poprawki na żywo:** lokalnie jest commit `f6fabf0` (interpunkcja Hero/sytuacje, generyczne CTA → `#pakiety` zamiast auto-Standard, rozwijane cechy pakietu w `/zamowienie`) — **NIE wypchnięty jeszcze na GitHub**. Trzeba: `git push` → na serwerze `cd /var/www/najemokazjonalny24 && git pull && npm install && npm run build && pm2 reload najemokazjonalny24`.
+3. **Konta zewnętrzne:** Przelewy24 (URL powiadomień `…/api/przelewy24/notify`, sandbox→prod), Resend (weryfikacja domeny → maile), InPost (token Geowidget + ShipX). Po wpięciu kluczy do `.env` na serwerze → `npm run build` → `pm2 reload`.
+4. **Cron przypomnień** na serwerze: `crontab -e` → `0 9 * * * curl -s -H "Authorization: Bearer <CRON_SECRET z .env>" https://najemokazjonalny24.com/api/cron/reminders`.
+5. **Zdjąć tryb „w budowie"** (gdy wszystko przetestowane): w `/etc/nginx/sites-available/najemokazjonalny24.com` usunąć linię `if ($cookie_preview != "ZOFIHEL2026") { return 503; }` → `nginx -t && systemctl reload nginx`.
+
+> ⚠️ Strona jest LIVE pod publiczną domeną (w trybie „w budowie"). Każdą zmianę w kodzie trzeba `git push` + `git pull`+build+`pm2 reload` na serwerze, żeby była widoczna. Lokalne edycje NIE pojawiają się same na produkcji.
 
 ---
 

@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { LanguageProvider } from '@/lib/i18n/LanguageProvider';
+import { CookieConsentProvider } from '@/lib/cookie-consent/CookieConsent';
+import CookieBanner from '@/components/CookieBanner';
+import ConsentScripts from '@/components/ConsentScripts';
 
 const inter = Inter({ subsets: ['latin', 'latin-ext'] });
 
@@ -35,7 +39,13 @@ export default function RootLayout({
   return (
     <html lang="pl" className="scroll-smooth">
       <body className={inter.className}>
-        {children}
+        <LanguageProvider>
+          <CookieConsentProvider>
+            {children}
+            <CookieBanner />
+            <ConsentScripts />
+          </CookieConsentProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

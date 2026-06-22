@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/utils';
 import { packages } from '@/lib/packages';
 import type { PackageId } from '@/types';
+import { useT, useLanguage } from '@/lib/i18n/LanguageProvider';
 
 const ICONS: Record<PackageId, typeof Zap> = {
   basic: Zap,
@@ -13,32 +14,50 @@ const ICONS: Record<PackageId, typeof Zap> = {
   vip: Gem,
 };
 
+interface PkgData {
+  tagline: string;
+  securityLevel: string;
+  badge?: string;
+  note?: string;
+  features: string[];
+  howItWorks?: string[];
+}
+
 export default function ImprovedPackagesSection() {
   const router = useRouter();
+  const t = useT();
+  const { tx } = useLanguage();
+  const pdata = tx<Record<string, PkgData>>('packagesData');
+  // Łączymy strukturę z packages.ts (ceny, id) z przetłumaczonymi tekstami.
+  const localized = packages.map((p) => ({ ...p, ...(pdata[p.id] || {}) }));
+  const trust = tx<{ t: string; d: string }[]>('pkg.trust');
 
   return (
     <section id="pakiety" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-6">
           <h2 className="text-3xl md:text-4xl font-bold text-navy-900 mb-4">
-            Wybierz poziom zabezpieczenia umowy
+            {t('pkg.heading')}
           </h2>
           <p className="text-lg text-navy-700 max-w-2xl mx-auto">
-            Im wyższy pakiet, tym mniej organizujesz samodzielnie — od podpisu profilem zaufanym,
-            przez notarialne poświadczenie podpisu, po pełną obsługę u notariusza (art. 777 k.p.c.).
+            {t('pkg.subtitle')}
           </p>
         </div>
 
         {/* Subtelna pilność nad pakietami */}
-        <div className="flex items-center justify-center gap-2 text-sm text-navy-600 mb-12 text-center">
-          <Timer className="w-4 h-4 text-gold-600 flex-shrink-0" />
-          Realizacja nawet w <strong className="text-navy-900">24 godziny</strong> · podpis profilem
-          zaufanym lub poświadczenie notarialne
+        <div className="flex flex-col items-center gap-1 mb-12 text-center">
+          <div className="flex items-center justify-center gap-2 text-sm text-navy-600">
+            <Timer className="w-4 h-4 text-gold-600 flex-shrink-0" />
+            {t('pkg.urgencyPre')}<strong className="text-navy-900">{t('pkg.urgency24h')}</strong>{t('pkg.urgencyPost')}
+          </div>
+          <p className="text-xs text-navy-500">
+            {t('pkg.footnote')}
+          </p>
         </div>
 
         {/* Siatka pakietów */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-          {packages.map((pkg) => {
+          {localized.map((pkg) => {
             const Icon = ICONS[pkg.id];
             const highlighted = !!pkg.bestValue;
 
@@ -72,7 +91,7 @@ export default function ImprovedPackagesSection() {
                   </div>
 
                   <h3 className={`text-xl font-bold ${highlighted ? 'text-white' : 'text-navy-900'}`}>
-                    Pakiet {pkg.name}
+                    {t('pkg.packagePrefix')} {pkg.name}
                   </h3>
                   <p className={`text-sm mt-1 mb-3 ${highlighted ? 'text-navy-300' : 'text-navy-600'}`}>
                     „{pkg.tagline}"
@@ -109,7 +128,7 @@ export default function ImprovedPackagesSection() {
                       {formatPrice(pkg.price)}
                     </div>
                     <div className={`text-xs ${highlighted ? 'text-navy-400' : 'text-navy-600'}`}>
-                      {pkg.period}
+                      {t('pkg.periodOnce')}
                     </div>
                   </div>
 
@@ -148,7 +167,7 @@ export default function ImprovedPackagesSection() {
                         : 'bg-navy-900 text-white hover:bg-navy-800'
                     }`}
                   >
-                    Wybierz {pkg.name}
+                    {t('pkg.choosePrefix')} {pkg.name}
                   </button>
                 </div>
               </div>
@@ -159,9 +178,9 @@ export default function ImprovedPackagesSection() {
         {/* Pasek zaufania / risk-reversal */}
         <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
           {[
-            { icon: ShieldCheck, t: 'Poświadczenie notarialne', d: 'Notarialne poświadczenie podpisu właściciela — od pakietu Standard' },
-            { icon: Star, t: 'Art. 777 k.p.c.', d: 'Poddanie się egzekucji u notariusza w pakiecie Komplet' },
-            { icon: Timer, t: 'Nawet w 24h', d: 'Realizacja ekspresowa w pakietach Premium i Komplet' },
+            { icon: ShieldCheck, ...trust[0] },
+            { icon: Star, ...trust[1] },
+            { icon: Timer, ...trust[2] },
           ].map((b, i) => {
             const BIcon = b.icon;
             return (
@@ -177,7 +196,7 @@ export default function ImprovedPackagesSection() {
         </div>
 
         {/* Jak to działa — dla pakietów z wizytą u notariusza (art. 777) */}
-        {packages
+        {localized
           .filter((p) => p.howItWorks && p.howItWorks.length > 0)
           .map((p) => (
             <div
@@ -185,7 +204,7 @@ export default function ImprovedPackagesSection() {
               className="max-w-4xl mx-auto mt-12 bg-gradient-to-br from-navy-50 to-white border-2 border-navy-100 rounded-2xl p-6 md:p-8"
             >
               <h3 className="text-xl font-bold text-navy-900 mb-5">
-                Jak działa pakiet {p.name} (art. 777 k.p.c.)
+                {t('pkg.howTitle').replace('{name}', p.name)}
               </h3>
               <ol className="space-y-4">
                 {p.howItWorks!.map((step, i) => (
@@ -202,16 +221,15 @@ export default function ImprovedPackagesSection() {
 
         {/* Pomoc w wyborze */}
         <div className="text-center max-w-3xl mx-auto mt-8 bg-navy-50 p-6 rounded-xl border-2 border-navy-100">
-          <p className="text-navy-800 font-semibold mb-1">Nie wiesz, który pakiet wybrać?</p>
+          <p className="text-navy-800 font-semibold mb-1">{t('pkg.helpTitle')}</p>
           <p className="text-navy-600 mb-4">
-            Skorzystaj z kreatora „Sprawdź w 30 sekund" na górze strony — dobierze pakiet do Twojej
-            sytuacji. Najczęściej wybierany jest pakiet Standard.
+            {t('pkg.helpText')}
           </p>
           <button
             onClick={() => router.push('/zamowienie?pakiet=standard')}
             className="inline-flex items-center justify-center px-7 py-3 bg-gold-500 text-navy-900 font-bold rounded-lg hover:bg-gold-600 transition-colors"
           >
-            Zamów online
+            {t('pkg.helpBtn')}
           </button>
         </div>
       </div>

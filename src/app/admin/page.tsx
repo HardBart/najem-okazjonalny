@@ -76,6 +76,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const markRealized = async (orderId: string) => {
+    if (!confirm('Oznaczyć zamówienie jako zrealizowane? Spowoduje to niezwłoczne usunięcie numeru PESEL (RODO).')) {
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/order-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, orderStatus: 'completed' }),
+      });
+      if (res.ok) {
+        await loadOrders();
+      } else {
+        alert('Nie udało się zaktualizować statusu.');
+      }
+    } catch {
+      alert('Błąd połączenia.');
+    }
+  };
+
   const filterOrders = () => {
     let filtered = [...orders];
 
@@ -342,14 +362,20 @@ export default function AdminDashboard() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Dokument
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Data
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    RODO / Akcje
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                       Brak zamówień
                     </td>
                   </tr>
@@ -377,8 +403,45 @@ export default function AdminDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {getStatusBadge(order.orderStatus)}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {order.invoiceDoc ? (
+                          <a
+                            href={`/api/admin/faktura-pdf?orderId=${encodeURIComponent(order.orderId)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-gold-700 hover:text-gold-800 font-medium"
+                            title={order.invoiceDoc.type === 'faktura' ? 'Faktura' : 'Rachunek'}
+                          >
+                            <Download className="w-4 h-4" />
+                            {order.invoiceDoc.number}
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(order.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex flex-col gap-1">
+                          {order.peselDeletedAt ? (
+                            <span className="inline-flex items-center gap-1 text-green-700" title={`Usunięto: ${formatDate(order.peselDeletedAt)}`}>
+                              <KeyRound className="w-3.5 h-3.5" /> PESEL usunięty
+                            </span>
+                          ) : order.personalData.pesel ? (
+                            <span className="inline-flex items-center gap-1 text-amber-700" title="PESEL nadal przechowywany">
+                              <KeyRound className="w-3.5 h-3.5" /> PESEL w bazie
+                            </span>
+                          ) : null}
+                          {order.paymentStatus === 'completed' && order.orderStatus !== 'completed' && (
+                            <button
+                              onClick={() => markRealized(order.orderId)}
+                              className="inline-flex w-fit items-center rounded-md bg-navy-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-navy-800"
+                            >
+                              Oznacz zrealizowane
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))

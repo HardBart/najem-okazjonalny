@@ -5,8 +5,10 @@ import { Phone, Mail, Send } from 'lucide-react';
 import Button from './Button';
 import { ContactFormData } from '@/types';
 import { company } from '@/lib/company';
+import { useT } from '@/lib/i18n/LanguageProvider';
 
 export default function ContactSection() {
+  const t = useT();
   const [formData, setFormData] = useState<ContactFormData>({
     name: '',
     email: '',
@@ -48,11 +50,10 @@ export default function ContactSection() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-navy-900 mb-4">
-            Kontakt
+            {t('contact.heading')}
           </h2>
           <p className="text-lg text-navy-700 max-w-2xl mx-auto">
-            Sprawy techniczne dotyczące serwisu i zamówień. Pełne informacje o usłudze znajdziesz
-            na stronie oraz w bazie wiedzy na blogu.
+            {t('contact.subtitle')}
           </p>
         </div>
 
@@ -60,13 +61,13 @@ export default function ContactSection() {
           {/* Contact Form */}
           <div className="bg-gradient-to-br from-navy-50 to-white p-8 rounded-2xl border-2 border-navy-100">
             <h3 className="text-2xl font-bold text-navy-900 mb-6">
-              Wyślij wiadomość
+              {t('contact.formTitle')}
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-navy-900 mb-2">
-                  Imię i nazwisko *
+                  {t('contact.name')}
                 </label>
                 <input
                   type="text"
@@ -80,7 +81,7 @@ export default function ContactSection() {
 
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-navy-900 mb-2">
-                  Adres e-mail *
+                  {t('contact.email')}
                 </label>
                 <input
                   type="email"
@@ -94,7 +95,7 @@ export default function ContactSection() {
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-navy-900 mb-2">
-                  Numer telefonu
+                  {t('contact.phone')}
                 </label>
                 <input
                   type="tel"
@@ -107,7 +108,7 @@ export default function ContactSection() {
 
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-navy-900 mb-2">
-                  Wiadomość *
+                  {t('contact.message')}
                 </label>
                 <textarea
                   id="message"
@@ -129,24 +130,23 @@ export default function ContactSection() {
                   className="mt-1 w-4 h-4 text-gold-600 border-navy-300 rounded focus:ring-gold-500"
                 />
                 <label htmlFor="consent" className="text-sm text-navy-700">
-                  Wyrażam zgodę na przetwarzanie moich danych osobowych w celu kontaktu.
-                  Administratorem danych jest {company.legalName}. Więcej w{' '}
+                  {t('contact.consentPre').replace('{company}', company.legalName)}
                   <a href="/polityka-prywatnosci" className="text-gold-600 hover:underline">
-                    polityce prywatności
+                    {t('contact.consentLink')}
                   </a>
-                  . *
+                  {t('contact.consentPost')}
                 </label>
               </div>
 
               {submitStatus === 'success' && (
                 <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-                  Dziękujemy za wiadomość! Odpowiemy najszybciej jak to możliwe.
+                  {t('contact.success')}
                 </div>
               )}
 
               {submitStatus === 'error' && (
                 <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-                  Wystąpił błąd. Spróbuj ponownie lub skontaktuj się z nami telefonicznie.
+                  {t('contact.error')}
                 </div>
               )}
 
@@ -158,7 +158,7 @@ export default function ContactSection() {
                 disabled={isSubmitting}
               >
                 <Send className="w-5 h-5 mr-2 inline" />
-                {isSubmitting ? 'Wysyłanie...' : 'Wyślij wiadomość'}
+                {isSubmitting ? t('contact.sending') : t('contact.send')}
               </Button>
             </form>
           </div>
@@ -167,7 +167,7 @@ export default function ContactSection() {
           <div className="space-y-8">
             <div>
               <h3 className="text-2xl font-bold text-navy-900 mb-6">
-                Inne formy kontaktu
+                {t('contact.other')}
               </h3>
               <div className="space-y-6">
                 <a
@@ -178,9 +178,9 @@ export default function ContactSection() {
                     <Phone className="w-6 h-6 text-gold-400" />
                   </div>
                   <div>
-                    <div className="font-semibold text-navy-900 mb-1">Telefon</div>
+                    <div className="font-semibold text-navy-900 mb-1">{t('contact.phoneLabel')}</div>
                     <div className="text-navy-700">{process.env.NEXT_PUBLIC_PHONE}</div>
-                    <div className="text-sm text-navy-600 mt-1">Pn-Pt: 9:00 - 18:00</div>
+                    <div className="text-sm text-navy-600 mt-1">{t('contact.phoneHours')}</div>
                   </div>
                 </a>
 
@@ -192,9 +192,9 @@ export default function ContactSection() {
                     <Mail className="w-6 h-6 text-gold-400" />
                   </div>
                   <div>
-                    <div className="font-semibold text-navy-900 mb-1">E-mail</div>
+                    <div className="font-semibold text-navy-900 mb-1">{t('contact.emailLabel')}</div>
                     <div className="text-navy-700">{process.env.NEXT_PUBLIC_EMAIL}</div>
-                    <div className="text-sm text-navy-600 mt-1">Odpowiedź w ciągu 24h</div>
+                    <div className="text-sm text-navy-600 mt-1">{t('contact.emailReply')}</div>
                   </div>
                 </a>
 
@@ -202,10 +202,9 @@ export default function ContactSection() {
             </div>
 
             <div className="bg-gold-50 border-2 border-gold-200 rounded-xl p-6">
-              <h4 className="font-semibold text-navy-900 mb-3">Godziny obsługi</h4>
+              <h4 className="font-semibold text-navy-900 mb-3">{t('contact.hoursTitle')}</h4>
               <p className="text-navy-700 text-sm leading-relaxed">
-                Sprawy techniczne i zamówienia obsługujemy od poniedziałku do piątku w godzinach
-                9:00 - 18:00. Wiadomości e-mail odbieramy także w weekendy.
+                {t('contact.hoursText')}
               </p>
             </div>
           </div>

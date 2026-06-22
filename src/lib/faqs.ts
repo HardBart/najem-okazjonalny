@@ -108,13 +108,13 @@ export const faqs: Faq[] = [
     category: 'Notariusz',
     question: 'Czy notariusz zaakceptuje przygotowane dokumenty?',
     answer:
-      'Tak. Oświadczenia przygotowujemy zgodnie z wymogami notariuszy, a podpis właściciela lokalu jest poświadczany notarialnie przed przekazaniem Tobie. Współpracujemy z kancelariami od lat i dokumenty są przyjmowane bez problemu.',
+      'Tak. Oświadczenia przygotowujemy zgodnie z wymogami, a w pakietach z poświadczeniem notarialnym podpis właściciela lokalu poświadcza notariusz przed przekazaniem Tobie (w pakiecie podstawowym podpis składany jest profilem zaufanym). Współpracujemy z kancelariami, dzięki czemu dokumenty są przyjmowane bez problemu. Przed zamówieniem sprawdź, jakiej formy podpisu wymaga druga strona Twojej umowy najmu (a w przypadku Twojego oświadczenia o poddaniu się egzekucji — kancelaria notarialna).',
   },
   {
     category: 'Notariusz',
     question: 'Czy podpis elektroniczny właściciela wystarczy zamiast notariusza?',
     answer:
-      'Nie. Ustawa wymaga, aby podpis właściciela lokalu pod oświadczeniem był poświadczony notarialnie. Zajmujemy się całą obsługą notarialną — Ty otrzymujesz gotowy, poświadczony dokument.',
+      'To zależy od oczekiwań wynajmującego. Poświadczenie notarialne podpisu właściciela lokalu bywa wymagane przez wynajmujących i jest najbezpieczniejszą formą — dlatego oferujemy je od pakietu Standard. W pakiecie podstawowym podpis właściciela składany jest profilem zaufanym; jeśli Twój wynajmujący wymaga formy notarialnej, wybierz pakiet z poświadczeniem. Przed zamówieniem sprawdź, jakiej formy podpisu wymaga druga strona Twojej umowy najmu (a w przypadku Twojego oświadczenia o poddaniu się egzekucji — kancelaria notarialna).',
   },
   {
     category: 'Notariusz',
@@ -134,7 +134,7 @@ export const faqs: Faq[] = [
     category: 'Czas i koszt',
     question: 'Ile czasu trwa realizacja?',
     answer:
-      'Zależnie od wybranego pakietu: standardowo 24–48 godzin, a w opcji ekspresowej nawet tego samego lub następnego dnia. Czas liczymy od potwierdzenia płatności i przekazania niezbędnych danych.',
+      'Zależnie od wybranego pakietu: standardowo 24–48 godzin, a w opcji ekspresowej nawet tego samego lub następnego dnia roboczego. Czas liczymy od potwierdzenia płatności i przekazania niezbędnych danych. Podany czas dotyczy przygotowania dokumentów i nie obejmuje czasu wysyłki (dostawy paczkomatem lub kurierem).',
   },
   {
     category: 'Czas i koszt',

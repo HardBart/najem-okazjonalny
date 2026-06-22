@@ -51,7 +51,7 @@ export default async function CityPage({ params }: Props) {
   const points = [
     { icon: FileSignature, text: `Oświadczenie właściciela lokalu` },
     { icon: Stamp, text: 'Poświadczenie notarialne podpisu' },
-    { icon: Clock, text: 'Realizacja nawet w 24h' },
+    { icon: Clock, text: 'Realizacja nawet w 24h (bez wysyłki)' },
     { icon: Users, text: 'Bez angażowania rodziny i znajomych' },
   ];
 
@@ -138,7 +138,7 @@ export default async function CityPage({ params }: Props) {
       <CTABand
         variant="dark"
         title={`Potrzebujesz adresu do najmu w ${city.locative}?`}
-        subtitle="Zamów online lub zadzwoń — komplet dokumentów gotowy nawet w 24h."
+        subtitle="Zamów online — komplet dokumentów gotowy nawet w 24h (czas realizacji bez wysyłki)."
       />
 
       {/* Treść lokalna / SEO */}
@@ -161,7 +161,8 @@ export default async function CityPage({ params }: Props) {
             </p>
             <p>
               Cały proces prowadzimy zdalnie. Nie musisz przyjeżdżać do naszego biura — komplet
-              dokumentów wyślemy tam, gdzie ich potrzebujesz, zwykle w ciągu 24–48 godzin.
+              dokumentów przygotowujemy zwykle w ciągu 24–48 godzin (czas realizacji nie obejmuje
+              wysyłki) i wyślemy go tam, gdzie go potrzebujesz.
             </p>
           </div>
 

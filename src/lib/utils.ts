@@ -42,6 +42,15 @@ export function validatePESEL(pesel: string): boolean {
   return controlDigit === digits[10];
 }
 
+/** Walidacja NIP (10 cyfr + suma kontrolna). Akceptuje myślniki/spacje. */
+export function validateNIP(nip: string): boolean {
+  const digits = (nip || '').replace(/[\s-]/g, '');
+  if (!/^\d{10}$/.test(digits)) return false;
+  const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7];
+  const sum = weights.reduce((acc, w, i) => acc + w * Number(digits[i]), 0);
+  return sum % 11 === Number(digits[9]);
+}
+
 export function sanitizeInput(input: string): string {
   return input.trim().replace(/[<>]/g, '');
 }

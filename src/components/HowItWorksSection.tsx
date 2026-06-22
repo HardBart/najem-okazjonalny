@@ -1,28 +1,17 @@
+'use client';
+
 import { Mail, FileSearch, FileText, CheckCircle } from 'lucide-react';
+import { useT, useLanguage } from '@/lib/i18n/LanguageProvider';
+
+const ICONS = [Mail, FileSearch, FileText, CheckCircle];
 
 export default function HowItWorksSection() {
-  const steps = [
-    {
-      icon: Mail,
-      title: '1. Kontakt i weryfikacja',
-      description: 'Wypełniasz formularz lub kontaktujesz się z nami. Weryfikujemy Twoje dane i potwierdzamy możliwość realizacji usługi.',
-    },
-    {
-      icon: FileSearch,
-      title: '2. Przygotowanie dokumentów',
-      description: 'Przygotowujemy wszystkie niezbędne dokumenty - oświadczenie właściciela lokalu oraz pozostałe formalności.',
-    },
-    {
-      icon: FileText,
-      title: '3. Obsługa notarialna',
-      description: 'Organizujemy spotkanie z notariuszem, który potwierdzi autentyczność dokumentów i przeprowadzi wymagane procedury.',
-    },
-    {
-      icon: CheckCircle,
-      title: '4. Gotowe do użycia',
-      description: 'Otrzymujesz komplet dokumentów gotowych do wykorzystania w umowie najmu okazjonalnego. Proste i bezpieczne.',
-    },
-  ];
+  const t = useT();
+  const { tx } = useLanguage();
+  const steps = tx<{ title: string; description: string }[]>('how.steps').map((s, i) => ({
+    ...s,
+    icon: ICONS[i],
+  }));
 
   return (
     <section id="jak-to-dziala" className="py-20 bg-white">
@@ -30,10 +19,10 @@ export default function HowItWorksSection() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-navy-900 mb-4">
-            Jak to działa?
+            {t('how.heading')}
           </h2>
           <p className="text-lg text-navy-700 max-w-2xl mx-auto">
-            Proces realizacji usługi jest prosty, przejrzysty i w pełni legalny
+            {t('how.subtitle')}
           </p>
         </div>
 
@@ -70,8 +59,7 @@ export default function HowItWorksSection() {
         {/* Additional Info */}
         <div className="mt-12 text-center bg-navy-50 rounded-xl p-8">
           <p className="text-navy-800 font-medium">
-            Cały proces realizowany jest zgodnie z obowiązującymi przepisami prawa.
-            Gwarantujemy pełną legalność i bezpieczeństwo rozwiązania.
+            {t('how.info')}
           </p>
         </div>
       </div>

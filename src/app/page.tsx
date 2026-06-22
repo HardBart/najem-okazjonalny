@@ -42,11 +42,7 @@ export default function HomePage() {
       <TrustReasonsSection />
       <PolandCoverageSection />
 
-      <CTABand
-        variant="light"
-        title="Gotowy, by mieć formalności z głowy?"
-        subtitle="Wybierz pakiet i zamów online — komplet dokumentów gotowy nawet w 24h."
-      />
+      <CTABand variant="light" content="light" />
 
       <ImprovedPackagesSection />
       <DetailedProcessSection />

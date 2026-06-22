@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Przelewy24Service, P24Notification } from '@/lib/przelewy24';
 import { StorageService } from '@/lib/storage';
-import { sendOrderConfirmation } from '@/lib/email';
+import { sendOrderConfirmation, sendInvoiceEmail } from '@/lib/email';
 import { InpostShipXService } from '@/lib/inpost';
+import { issueInvoiceForOrder } from '@/lib/invoice/issueInvoice';
 
 /**
  * Handler powiadomień (webhook) Przelewy24 — wywoływany przez P24 po płatności
@@ -58,6 +59,28 @@ export async function POST(request: NextRequest) {
         paymentStatus: 'completed',
         orderStatus: 'in_progress',
       });
+
+      // Wystawienie dokumentu sprzedaży (faktura/rachunek) + e-mail z PDF.
+      // Idempotentnie: pomijamy, jeśli dokument już wystawiony. Nie blokuje płatności.
+      try {
+        if (!storedOrder.invoiceDoc) {
+          const p24Id = String(notification.orderId);
+          const issued = await issueInvoiceForOrder(
+            { ...storedOrder, paymentStatus: 'completed' },
+            { p24TransactionId: p24Id }
+          );
+          await StorageService.updateOrder(storedOrder.orderId, {
+            p24TransactionId: p24Id,
+            invoiceDoc: { number: issued.number, type: issued.type, issuedAt: new Date().toISOString() },
+          });
+          if (!issued.alreadyIssued) {
+            await sendInvoiceEmail({ ...storedOrder }, { number: issued.number, type: issued.type, pdf: issued.pdf });
+          }
+          console.log(`Order ${storedOrder.orderId}: ${issued.type} ${issued.number} (VAT ${issued.vat})`);
+        }
+      } catch (e) {
+        console.error('Order invoice error (nie blokuje płatności):', e);
+      }
 
       // Utworzenie przesyłki InPost (jeśli skonfigurowano i dostawa fizyczna)
       try {

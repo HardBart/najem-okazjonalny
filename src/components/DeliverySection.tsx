@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { MapPin, Truck, Mail, ExternalLink } from 'lucide-react';
 import type { PackageId } from '@/types';
+import { useT } from '@/lib/i18n/LanguageProvider';
 
 export interface DeliveryValue {
   method: 'paczkomat' | 'kurier' | 'email';
@@ -17,9 +18,9 @@ export interface DeliveryValue {
 /** Dozwolone metody dostawy zależnie od pakietu. */
 const METHODS_BY_PACKAGE: Record<PackageId, DeliveryValue['method'][]> = {
   basic: ['email'], // Start — dokumenty elektronicznie
-  standard: ['paczkomat'], // paczkomat InPost
-  premium: ['paczkomat', 'kurier'], // wybór
-  vip: ['kurier'], // Komplet — kurier priorytetowy
+  standard: ['paczkomat', 'kurier'], // paczkomat w cenie, kurier za dopłatą
+  premium: ['paczkomat', 'kurier'], // wybór, kurier w cenie
+  vip: ['kurier'], // Komplet — kurier priorytetowy w cenie
 };
 
 const GEOWIDGET_TOKEN = process.env.NEXT_PUBLIC_INPOST_GEOWIDGET_TOKEN || '';
@@ -87,11 +88,15 @@ export default function DeliverySection({
   packageId,
   value,
   onChange,
+  courierSurcharge = 0,
 }: {
   packageId: PackageId;
   value: DeliveryValue;
   onChange: (v: DeliveryValue) => void;
+  /** Dopłata za kuriera pod adres (0, gdy wliczony w pakiet). */
+  courierSurcharge?: number;
 }) {
+  const t = useT();
   const allowed = METHODS_BY_PACKAGE[packageId] || ['email'];
 
   // Po zmianie pakietu wymuś dozwoloną metodę
@@ -106,9 +111,9 @@ export default function DeliverySection({
 
   return (
     <div className="pt-6 border-t-2 border-navy-100">
-      <h3 className="text-xl font-bold text-navy-900 mb-1">Dostawa dokumentów</h3>
+      <h3 className="text-xl font-bold text-navy-900 mb-1">{t('order.delivery.title')}</h3>
       <p className="text-sm text-navy-600 mb-4">
-        Wskaż, gdzie mamy wysłać komplet dokumentów.
+        {t('order.delivery.hint')}
       </p>
 
       {/* Wybór metody (jeśli więcej niż jedna) */}
@@ -125,7 +130,7 @@ export default function DeliverySection({
               }`}
             >
               <MapPin className="w-5 h-5 text-gold-600" />
-              Paczkomat InPost
+              {t('order.delivery.paczkomat')}
             </button>
           )}
           {allowed.includes('kurier') && (
@@ -139,7 +144,10 @@ export default function DeliverySection({
               }`}
             >
               <Truck className="w-5 h-5 text-gold-600" />
-              Kurier (na adres)
+              {t('order.delivery.kurier')}
+              {courierSurcharge > 0 && (
+                <span className="ml-auto text-gold-700 font-bold whitespace-nowrap">+{courierSurcharge} zł</span>
+              )}
             </button>
           )}
         </div>
@@ -150,8 +158,7 @@ export default function DeliverySection({
         <div className="flex items-start gap-3 p-4 rounded-xl bg-navy-50 border border-navy-100 text-sm text-navy-700">
           <Mail className="w-5 h-5 text-gold-600 flex-shrink-0 mt-0.5" />
           <span>
-            Dokumenty wyślemy elektronicznie na podany adres e-mail. Jeśli chcesz otrzymać oryginał
-            pocztą lub do paczkomatu, wybierz wyższy pakiet.
+            {t('order.delivery.emailInfo')}
           </span>
         </div>
       )}
@@ -164,25 +171,25 @@ export default function DeliverySection({
           />
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-navy-900 mb-2">Kod paczkomatu *</label>
+              <label className="block text-sm font-medium text-navy-900 mb-2">{t('order.delivery.pointCode')}</label>
               <input
                 type="text"
                 value={value.pointCode || ''}
                 onChange={(e) => set({ pointCode: e.target.value.toUpperCase() })}
                 className={inputClass}
-                placeholder="np. KRA010"
+                placeholder={t('order.delivery.pointCodePlaceholder')}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-navy-900 mb-2">
-                Adres paczkomatu
+                {t('order.delivery.pointAddress')}
               </label>
               <input
                 type="text"
                 value={value.pointAddress || ''}
                 onChange={(e) => set({ pointAddress: e.target.value })}
                 className={inputClass}
-                placeholder="np. ul. Floriańska 1, Kraków"
+                placeholder={t('order.delivery.pointAddressPlaceholder')}
               />
             </div>
           </div>
@@ -194,7 +201,7 @@ export default function DeliverySection({
               className="inline-flex items-center gap-1 mt-3 text-sm text-gold-700 hover:text-gold-800 font-medium"
             >
               <ExternalLink className="w-4 h-4" />
-              Znajdź paczkomat na mapie InPost
+              {t('order.delivery.findLocker')}
             </a>
           )}
         </div>
@@ -204,28 +211,28 @@ export default function DeliverySection({
       {value.method === 'kurier' && (
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-navy-900 mb-2">Odbiorca *</label>
+            <label className="block text-sm font-medium text-navy-900 mb-2">{t('order.delivery.recipient')}</label>
             <input
               type="text"
               value={value.recipientName || ''}
               onChange={(e) => set({ recipientName: e.target.value })}
               className={inputClass}
-              placeholder="Imię i nazwisko odbiorcy"
+              placeholder={t('order.delivery.recipientPlaceholder')}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-navy-900 mb-2">Ulica i numer *</label>
+            <label className="block text-sm font-medium text-navy-900 mb-2">{t('order.delivery.street')}</label>
             <input
               type="text"
               value={value.street || ''}
               onChange={(e) => set({ street: e.target.value })}
               className={inputClass}
-              placeholder="ul. Przykładowa 12/3"
+              placeholder={t('order.delivery.streetPlaceholder')}
             />
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-navy-900 mb-2">Kod *</label>
+              <label className="block text-sm font-medium text-navy-900 mb-2">{t('order.delivery.postalCode')}</label>
               <input
                 type="text"
                 value={value.postalCode || ''}
@@ -235,13 +242,13 @@ export default function DeliverySection({
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-navy-900 mb-2">Miasto *</label>
+              <label className="block text-sm font-medium text-navy-900 mb-2">{t('order.delivery.city')}</label>
               <input
                 type="text"
                 value={value.city || ''}
                 onChange={(e) => set({ city: e.target.value })}
                 className={inputClass}
-                placeholder="Warszawa"
+                placeholder={t('order.delivery.cityPlaceholder')}
               />
             </div>
           </div>

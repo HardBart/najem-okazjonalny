@@ -31,7 +31,7 @@ export default function ArticleFooterCTA({ currentSlug, category }: Props) {
         </h2>
         <p className="text-navy-300 mb-6 max-w-xl mx-auto">
           Zapewniamy oświadczenie właściciela lokalu z poświadczeniem notarialnym — bez angażowania
-          rodziny. Realizacja nawet w 24h.
+          rodziny. Realizacja nawet w 24h (czas realizacji nie obejmuje wysyłki).
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link

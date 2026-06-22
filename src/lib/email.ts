@@ -31,11 +31,14 @@ async function sendEmail(opts: {
   subject: string;
   html: string;
   replyTo?: string;
+  /** Załączniki Resend: { filename, content (base64) }. */
+  attachments?: { filename: string; content: string }[];
 }): Promise<boolean> {
   if (!RESEND_API_KEY) {
     console.log('[email] RESEND_API_KEY nieustawiony — pomijam wysyłkę:', {
       to: opts.to,
       subject: opts.subject,
+      attachments: opts.attachments?.map((a) => a.filename),
     });
     return false;
   }
@@ -53,6 +56,7 @@ async function sendEmail(opts: {
         subject: opts.subject,
         html: opts.html,
         ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+        ...(opts.attachments ? { attachments: opts.attachments } : {}),
       }),
     });
 
@@ -90,6 +94,26 @@ function layout(title: string, inner: string): string {
   </div>`;
 }
 
+/** Wysyła dokument sprzedaży (faktura/rachunek) jako załącznik PDF do klienta. */
+export async function sendInvoiceEmail(
+  order: Order,
+  doc: { number: string; type: 'faktura' | 'rachunek'; pdf: Buffer }
+): Promise<boolean> {
+  const label = doc.type === 'faktura' ? 'Faktura' : 'Rachunek';
+  const filename = `${doc.type}-${doc.number.replace(/[ /]/g, '_')}.pdf`;
+  const inner = `
+    <p>Dzień dobry,</p>
+    <p>w załączniku przesyłamy <strong>${label.toLowerCase()} ${doc.number}</strong> do zamówienia
+      <strong>${order.orderId}</strong>.</p>
+    <p>Dokument wystawiony elektronicznie, nie wymaga podpisu.</p>`;
+  return sendEmail({
+    to: order.personalData.email,
+    subject: `${label} ${doc.number} — Najem Okazjonalny`,
+    html: layout(`${label} ${doc.number}`, inner),
+    attachments: [{ filename, content: doc.pdf.toString('base64') }],
+  });
+}
+
 function deliveryHtml(order: Order): string {
   const d = order.delivery;
   if (!d) return '';
@@ -113,6 +137,107 @@ function orderItemsHtml(order: Order): string {
     if (a) rows.push(`<li>${a.name} — ${formatPLN(a.price)}</li>`);
   });
   return `<ul style="padding-left:18px; line-height:1.7;">${rows.join('')}</ul>`;
+}
+
+const EXPRESS_PACKAGES = ['premium', 'vip'];
+
+/** Czy zamówienie ma priorytet ekspresowy (pakiet lub dodatek „ekspres"). */
+function isExpressOrder(order: Order): boolean {
+  return EXPRESS_PACKAGES.includes(order.package) || (order.addons || []).includes('ekspres');
+}
+
+/** Blok terminu realizacji (SLA przygotowania + orientacyjna data) — mail wewnętrzny. */
+function slaBlockHtml(order: Order): string {
+  const express = isExpressOrder(order);
+  const hours = express ? 24 : order.package === 'basic' ? 72 : 48;
+  const due = new Date(Date.now() + hours * 3600 * 1000);
+  const label = express
+    ? 'EKSPRES — do 24 h, priorytet (poza kolejnością)'
+    : order.package === 'basic'
+    ? '2–3 dni robocze'
+    : '24–48 h';
+  const bg = express ? '#fdecec' : '#faf4e7';
+  const border = express ? '#f3b4b4' : '#efdca7';
+  return `
+    <div style="background:${bg}; border:1px solid ${border}; border-radius:12px; padding:14px 18px; margin:0 0 18px;">
+      <p style="margin:0; font-size:13px; color:#627d98;">Termin realizacji (przygotowanie dokumentów, bez wysyłki):</p>
+      <p style="margin:6px 0 0; font-size:16px;"><strong>${label}</strong></p>
+      <p style="margin:6px 0 0; font-size:13px; color:#486581;">Orientacyjnie do: <strong>${due.toLocaleString('pl-PL')}</strong> (licząc w dni robocze).</p>
+    </div>`;
+}
+
+/** Lista dokumentów/zadań do przygotowania dla zamówienia (wewnętrzne „to do"). */
+function deliverablesHtml(order: Order): string {
+  const items: string[] = [
+    'Oświadczenie właściciela lokalu o zgodzie na zamieszkanie najemcy wraz ze wskazaniem adresu.',
+  ];
+  if (order.package === 'basic') {
+    items.push('Podpis właściciela lokalu: <strong>profil zaufany</strong> (BEZ notariusza).');
+  } else {
+    items.push('<strong>Notarialne poświadczenie</strong> podpisu właściciela lokalu — organizacja u notariusza.');
+  }
+  if (order.package === 'vip') {
+    items.push('Poddanie się egzekucji z <strong>art. 777 k.p.c.</strong> u notariusza — ustalić termin wizyty z klientem.');
+  }
+  const addons = order.addons || [];
+  if (addons.includes('pakiet-bezpieczny-najem')) {
+    items.push('Wysłać <strong>Pakiet „Bezpieczny Najem"</strong>: wzory (umowa najmu, protokół zdawczo-odbiorczy, instrukcja zgłoszenia do US).');
+  }
+  if (addons.includes('dodatkowe-egzemplarze')) {
+    items.push('Przygotować <strong>dodatkowy papierowy komplet</strong> poświadczonych dokumentów.');
+  }
+  return `<ul style="padding-left:18px; line-height:1.8;">${items.map((i) => `<li>${i}</li>`).join('')}</ul>`;
+}
+
+/** Dane do faktury (jeśli klient ją zaznaczył) — mail wewnętrzny. */
+function invoiceDetailsHtml(order: Order): string {
+  const inv = order.invoice;
+  if (!inv?.wantInvoice) return '';
+  const who =
+    inv.buyerType === 'company'
+      ? `${inv.companyName || '—'}, NIP: ${inv.nip || '—'}`
+      : `${inv.buyerName || '—'}`;
+  return `<p style="line-height:1.7;"><strong>Dane do faktury:</strong> ${who}${inv.address ? `, ${inv.address}` : ''}</p>`;
+}
+
+/**
+ * Buduje treść wewnętrznego powiadomienia o opłaconym zamówieniu (do firmy):
+ * termin realizacji, pełne dane klienta, lista dokumentów do przygotowania, zakres.
+ * Eksportowane, by można było podejrzeć render (np. dev-route).
+ */
+export function buildOrderAdminHtml(order: Order): string {
+  const pesel = order.personalData.pesel?.trim();
+  const peselNote =
+    order.package !== 'basic' && !pesel
+      ? ' <span style="color:#bb4444;">(brak — dopytać, jeśli wymagany do dokumentu/notariusza)</span>'
+      : '';
+  return layout(
+    'Nowe opłacone zamówienie — do realizacji',
+    `
+    ${slaBlockHtml(order)}
+    <p style="line-height:1.8;">
+      <strong>Nr zamówienia:</strong> ${order.orderId}<br/>
+      <strong>Data płatności:</strong> ${new Date().toLocaleString('pl-PL')}<br/>
+      <strong>Kwota:</strong> ${formatPLN(order.amount)}<br/>
+      <strong>Pakiet:</strong> ${getPackageById(order.package)?.name || order.package}
+    </p>
+    <p style="margin:18px 0 6px; font-weight:bold; color:#102a43;">Klient</p>
+    <p style="line-height:1.8;">
+      <strong>Imię i nazwisko:</strong> ${order.personalData.firstName} ${order.personalData.lastName}<br/>
+      <strong>E-mail:</strong> ${order.personalData.email}<br/>
+      <strong>Telefon:</strong> ${order.personalData.phone}<br/>
+      <strong>PESEL:</strong> ${pesel || '—'}${peselNote}<br/>
+      <strong>Obecny adres:</strong> ${order.rentalData?.currentAddress || '—'}<br/>
+      <strong>Cel najmu:</strong> ${order.rentalData?.rentalPurpose || '—'}
+    </p>
+    ${invoiceDetailsHtml(order)}
+    <p style="margin:18px 0 6px; font-weight:bold; color:#102a43;">Do przygotowania</p>
+    ${deliverablesHtml(order)}
+    <p style="margin:18px 0 6px; font-weight:bold; color:#102a43;">Zamówiony zakres</p>
+    ${orderItemsHtml(order)}
+    ${deliveryHtml(order)}
+    `
+  );
 }
 
 /**
@@ -146,22 +271,7 @@ export async function sendOrderConfirmation(order: Order): Promise<void> {
     `
   );
 
-  const adminHtml = layout(
-    'Nowe opłacone zamówienie',
-    `
-    <p style="line-height:1.8;">
-      <strong>Nr:</strong> ${order.orderId}<br/>
-      <strong>Kwota:</strong> ${formatPLN(order.amount)}<br/>
-      <strong>Klient:</strong> ${order.personalData.firstName} ${order.personalData.lastName}<br/>
-      <strong>E-mail:</strong> ${order.personalData.email}<br/>
-      <strong>Telefon:</strong> ${order.personalData.phone}<br/>
-      <strong>Miasto adresu:</strong> ${order.rentalData.desiredCity}
-    </p>
-    <p><strong>Zakres:</strong></p>
-    ${orderItemsHtml(order)}
-    ${deliveryHtml(order)}
-    `
-  );
+  const adminHtml = buildOrderAdminHtml(order);
 
   await Promise.all([
     sendEmail({

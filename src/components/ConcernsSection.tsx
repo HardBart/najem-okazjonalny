@@ -1,53 +1,21 @@
-import { ShieldCheck } from 'lucide-react';
+'use client';
 
-const CONCERNS = [
-  {
-    concern: 'Czy to legalne?',
-    answer:
-      'Tak. Najem okazjonalny reguluje ustawa o ochronie praw lokatorów, a ona nie wymaga pokrewieństwa z właścicielem wskazanego lokalu. Dostarczamy dokumenty dokładnie zgodne z jej wymogami.',
-  },
-  {
-    concern: 'Czy notariusz zaakceptuje dokumenty?',
-    answer:
-      'Tak. Oświadczenie przygotowujemy zgodnie z wymogami, a podpis właściciela lokalu poświadcza notariusz. Otrzymujesz dokument gotowy do dołączenia do umowy.',
-  },
-  {
-    concern: 'Czy adres może być w innym mieście?',
-    answer:
-      'Tak. Prawo nie wymaga, by lokal z oświadczenia był w tym samym mieście co wynajmowane mieszkanie. Adres może być w dowolnej części Polski.',
-  },
-  {
-    concern: 'Co jeśli właściciel mieszkania zapyta, skąd mam adres?',
-    answer:
-      'To Twój zgodny z prawem komplet dokumentów. Wynajmujący oczekuje oświadczenia właściciela lokalu z poświadczeniem notarialnym — i dokładnie to mu przekazujesz. Pochodzenie nie ma znaczenia prawnego.',
-  },
-  {
-    concern: 'Czy mogę wszystko załatwić online?',
-    answer:
-      'Tak. Cały proces prowadzimy zdalnie — zamawiasz przez formularz, a gotowe dokumenty wysyłamy pocztą lub kurierem. Nie musisz nigdzie jechać.',
-  },
-  {
-    concern: 'Czy muszę znać właściciela lokalu?',
-    answer:
-      'Nie. Właściciela lokalu i jego oświadczenie zapewniamy my. Nie musisz nikogo znać ani prosić rodziny czy znajomych.',
-  },
-  {
-    concern: 'Czy dokumenty są zgodne z ustawą?',
-    answer:
-      'Tak. Każdy komplet przygotowujemy zgodnie z wymogami ustawy o najmie okazjonalnym i poświadczamy notarialnie, dzięki czemu nadaje się do zawarcia umowy.',
-  },
-];
+import { ShieldCheck } from 'lucide-react';
+import { useT, useLanguage } from '@/lib/i18n/LanguageProvider';
 
 export default function ConcernsSection() {
+  const t = useT();
+  const { tx } = useLanguage();
+  const CONCERNS = tx<{ concern: string; answer: string }[]>('concerns.items');
   return (
     <section className="py-20 bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <h2 className="text-3xl md:text-4xl font-bold text-navy-900 mb-4">
-            Najczęstsze obawy klientów
+            {t('concerns.heading')}
           </h2>
           <p className="text-lg text-navy-700 max-w-2xl mx-auto">
-            Rozumiemy wątpliwości. Oto szczere, konkretne odpowiedzi — zanim podejmiesz decyzję.
+            {t('concerns.subtitle')}
           </p>
         </div>
 

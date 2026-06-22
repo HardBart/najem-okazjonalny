@@ -12,62 +12,26 @@ import {
   Building2,
   ArrowRight,
 } from 'lucide-react';
+import { useT, useLanguage } from '@/lib/i18n/LanguageProvider';
 
-const SITUATIONS = [
-  {
-    icon: Users,
-    title: 'Nie masz rodziny w Polsce.',
-    text: 'Nie masz kogo poprosić o adres do oświadczenia? Zapewniamy go bez angażowania bliskich.',
-  },
-  {
-    icon: Home,
-    title: 'Wynajmujący wymaga najmu okazjonalnego.',
-    text: 'Właściciel mieszkania zgodzi się podpisać umowę tylko w formie najmu okazjonalnego. Dostarczymy brakujące dokumenty.',
-  },
-  {
-    icon: Zap,
-    title: 'Potrzebujesz dokumentów na już.',
-    text: 'Podpisanie umowy za kilka dni? Realizujemy komplet dokumentów nawet w 24 godziny.',
-  },
-  {
-    icon: Truck,
-    title: 'Przeprowadzasz się do innego miasta.',
-    text: 'Zmieniasz miasto i nie znasz tam nikogo. Adres w oświadczeniu może być w dowolnej części Polski.',
-  },
-  {
-    icon: Plane,
-    title: 'Wróciłeś z zagranicy.',
-    text: 'Po latach za granicą nie masz aktualnego zaplecza w kraju. Załatwiamy formalności od ręki.',
-  },
-  {
-    icon: GraduationCap,
-    title: 'Jesteś studentem.',
-    text: 'Wynajmujesz pierwsze mieszkanie i właściciel prosi o najem okazjonalny. Pomożemy bez stresu.',
-  },
-  {
-    icon: Globe,
-    title: 'Jesteś obcokrajowcem.',
-    text: 'Mieszkasz i pracujesz w Polsce, ale nie masz tu rodziny. Przygotujemy komplet dokumentów po polsku.',
-  },
-  {
-    icon: Building2,
-    title: 'Zarządzasz najmem zawodowo.',
-    text: 'Obsługujesz wiele lokali i potrzebujesz sprawdzonego partnera do dokumentów najmu okazjonalnego.',
-  },
-];
+const ICONS = [Users, Home, Zap, Truck, Plane, GraduationCap, Globe, Building2];
 
 export default function TypicalSituationsSection() {
   const router = useRouter();
+  const t = useT();
+  const { tx } = useLanguage();
+  const items = tx<{ title: string; text: string }[]>('situations.items');
+  const SITUATIONS = items.map((it, i) => ({ ...it, icon: ICONS[i] }));
 
   return (
     <section id="kiedy-potrzebna" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <h2 className="text-3xl md:text-4xl font-bold text-navy-900 mb-4">
-            Kiedy ta usługa jest potrzebna?
+            {t('situations.heading')}
           </h2>
           <p className="text-lg text-navy-700 max-w-2xl mx-auto">
-            Jeśli rozpoznajesz u siebie którąś z poniższych sytuacji — jesteś we właściwym miejscu.
+            {t('situations.subtitle')}
           </p>
         </div>
 
@@ -86,7 +50,7 @@ export default function TypicalSituationsSection() {
                 <h3 className="text-lg font-bold text-navy-900 mb-2">{s.title}</h3>
                 <p className="text-sm text-navy-700 leading-relaxed mb-4">{s.text}</p>
                 <span className="inline-flex items-center gap-1 text-gold-600 font-semibold text-sm group-hover:gap-2 transition-all">
-                  Zamów dokumenty
+                  {t('situations.cta')}
                   <ArrowRight className="w-4 h-4" />
                 </span>
               </button>

@@ -1,43 +1,16 @@
+'use client';
+
 import { FileText, UserCheck, FileCheck, NotebookPen, CheckCircle2, Clock } from 'lucide-react';
+import { useT, useLanguage } from '@/lib/i18n/LanguageProvider';
+
+const ICONS = [FileText, UserCheck, FileCheck, NotebookPen, CheckCircle2];
 
 export default function DetailedProcessSection() {
-  const steps = [
-    {
-      number: 1,
-      icon: FileText,
-      title: 'Wypełniasz formularz zamówienia',
-      description: 'Wybierasz pakiet i wypełniasz prosty formularz z podstawowymi danymi. Zajmuje to 3-5 minut. Po wypełnieniu dokonujesz bezpiecznej płatności przez Przelewy24.',
-      time: '5 minut',
-    },
-    {
-      number: 2,
-      icon: UserCheck,
-      title: 'Weryfikujemy możliwość realizacji',
-      description: 'Kontaktujemy się z Tobą (telefon lub email) aby potwierdzić szczegóły i upewnić się, że możemy pomóc. Odpowiadamy na wszystkie pytania.',
-      time: '2-4 godziny',
-    },
-    {
-      number: 3,
-      icon: FileCheck,
-      title: 'Przygotowujemy dokumenty',
-      description: 'Nasz zespół przygotowuje oświadczenie właściciela lokalu oraz pozostałe dokumenty zgodnie z obowiązującymi przepisami prawa.',
-      time: '12-24 godziny',
-    },
-    {
-      number: 4,
-      icon: NotebookPen,
-      title: 'Organizujemy poświadczenie notarialne',
-      description: 'Umawiamy termin z notariuszem i zajmujemy się poświadczeniem autentyczności podpisu właściciela. W większości przypadków nie musisz być obecny.',
-      time: '1-2 dni',
-    },
-    {
-      number: 5,
-      icon: CheckCircle2,
-      title: 'Otrzymujesz komplet dokumentów',
-      description: 'Dostarczamy Ci gotowe dokumenty - oświadczenie właściciela poświadczone notarialnie oraz instrukcję jak wykorzystać je przy zawieraniu umowy najmu.',
-      time: 'od razu',
-    },
-  ];
+  const t = useT();
+  const { tx } = useLanguage();
+  const steps = tx<{ title: string; description: string; time: string }[]>('process.steps').map(
+    (s, i) => ({ ...s, number: i + 1, icon: ICONS[i] })
+  );
 
   return (
     <section className="py-20 bg-gradient-to-br from-navy-50 to-white">
@@ -46,16 +19,18 @@ export default function DetailedProcessSection() {
         <div className="text-center mb-16">
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-navy-900 text-white text-sm font-medium mb-4">
             <Clock className="w-4 h-4 mr-2" />
-            Średni czas realizacji: 24-48 godzin
+            {t('process.headerBadge')}
           </div>
 
           <h2 className="text-3xl md:text-4xl font-bold text-navy-900 mb-4">
-            Jak wygląda współpraca krok po kroku?
+            {t('process.heading')}
           </h2>
 
           <p className="text-lg text-navy-700 max-w-2xl mx-auto">
-            Prosty, przejrzysty proces. Zajmujemy się wszystkim,
-            abyś mógł skupić się na wynajmie mieszkania.
+            {t('process.subtitle')}
+          </p>
+          <p className="text-sm text-navy-500 max-w-2xl mx-auto mt-3">
+            {t('process.note')}
           </p>
         </div>
 
@@ -105,17 +80,16 @@ export default function DetailedProcessSection() {
         {/* Bottom CTA */}
         <div className="mt-12 text-center bg-navy-900 text-white p-8 rounded-2xl">
           <h3 className="text-2xl font-bold mb-3">
-            Gotowy żeby zacząć?
+            {t('process.ctaTitle')}
           </h3>
           <p className="text-navy-300 mb-6 max-w-2xl mx-auto">
-            Wybierz pakiet i wypełnij formularz - cała reszta jest po naszej stronie.
-            Realizujemy sprawy dla klientów z całej Polski.
+            {t('process.ctaText')}
           </p>
           <a
             href="#pakiety"
             className="inline-flex items-center justify-center px-8 py-4 bg-gold-500 text-navy-900 font-bold rounded-lg hover:bg-gold-400 transition-colors"
           >
-            Zobacz pakiety i ceny
+            {t('process.ctaButton')}
           </a>
         </div>
       </div>

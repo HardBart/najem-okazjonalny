@@ -5,18 +5,21 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Menu, X, KeyRound } from 'lucide-react';
 import Button from './Button';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useT } from '@/lib/i18n/LanguageProvider';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
+  const t = useT();
 
   const navigation = [
-    { name: 'Jak to działa', href: '/#jak-to-dziala' },
-    { name: 'Pakiety', href: '/#pakiety' },
-    { name: 'Dla wynajmujących', href: '/dla-wynajmujacych' },
-    { name: 'Dla firm', href: '/obsluga-wielu-lokali' },
-    { name: 'Blog', href: '/blog' },
-    { name: 'FAQ', href: '/#faq' },
+    { name: t('nav.how'), href: '/#jak-to-dziala' },
+    { name: t('nav.packages'), href: '/#pakiety' },
+    { name: t('nav.landlords'), href: '/dla-wynajmujacych' },
+    { name: t('nav.business'), href: '/obsluga-wielu-lokali' },
+    { name: t('nav.blog'), href: '/blog' },
+    { name: t('nav.faq'), href: '/#faq' },
   ];
 
   return (
@@ -48,15 +51,18 @@ export default function Header() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
+            <LanguageSwitcher />
             <Button variant="primary" size="sm" onClick={() => router.push('/#pakiety')}>
-              Zamów teraz
+              {t('nav.orderNow')}
             </Button>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile: switcher + menu button */}
+          <div className="md:hidden flex items-center gap-2">
+            <LanguageSwitcher />
           <button
             type="button"
-            className="md:hidden p-2 text-navy-900"
+            className="p-2 text-navy-900"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? (
@@ -65,6 +71,7 @@ export default function Header() {
               <Menu className="w-6 h-6" />
             )}
           </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
@@ -90,7 +97,7 @@ export default function Header() {
                     router.push('/#pakiety');
                   }}
                 >
-                  Zamów teraz
+                  {t('nav.orderNow')}
                 </Button>
               </div>
             </div>

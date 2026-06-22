@@ -4,6 +4,7 @@ import Footer from '@/components/Footer';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import JsonLd from '@/components/JsonLd';
 import ArticleFooterCTA from '@/components/ArticleFooterCTA';
+import BlogLangNotice from '@/components/BlogLangNotice';
 import { articleSchema } from '@/lib/schema';
 import { Calendar, Clock, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import type { Metadata } from 'next';
@@ -79,6 +80,8 @@ export default function ArticlePage() {
               okazjonalnego.
             </p>
           </header>
+
+          <BlogLangNotice />
 
           {/* Article Content */}
           <div className="prose prose-lg max-w-none">

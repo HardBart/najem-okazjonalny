@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Przelewy24Service } from '@/lib/przelewy24';
 import { StorageService } from '@/lib/storage';
 import { getPackageById } from '@/lib/packages';
-import { getAddonById, sumAddons } from '@/lib/addons';
+import { getAddonById, sumAddons, courierSurchargeFor } from '@/lib/addons';
 import { getDiscount, discountAmountFor, normalizeCode } from '@/lib/discounts';
 import { Order } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { orderId, package: packageId, addons, personalData, rentalData, consents, regulaminVersion, discountCode, delivery } = body;
+    const { orderId, package: packageId, addons, personalData, rentalData, consents, regulaminVersion, politykaVersion, discountCode, delivery, invoice } = body;
 
     // Validate package
     const selectedPackage = getPackageById(packageId);
@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
     const addonIds: string[] = Array.isArray(addons)
       ? addons.filter((id: string) => getAddonById(id))
       : [];
-    const baseAmount = selectedPackage.price + sumAddons(addonIds);
+    const deliverySurcharge = courierSurchargeFor(packageId, delivery?.method);
+    const baseAmount = selectedPackage.price + sumAddons(addonIds) + deliverySurcharge;
 
     // Walidacja kodu rabatowego po stronie serwera
     const validDiscount = discountCode && getDiscount(discountCode) ? normalizeCode(discountCode) : undefined;
@@ -44,12 +45,14 @@ export async function POST(request: NextRequest) {
       personalData,
       rentalData,
       delivery,
+      invoice,
       paymentStatus: 'pending',
       orderStatus: 'new',
       amount: totalAmount,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       regulaminVersion,
+      politykaVersion,
       ip,
       discountCode: validDiscount,
       discountAmount: discountAmount || undefined,

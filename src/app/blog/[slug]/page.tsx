@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import Breadcrumbs from '@/components/Breadcrumbs';
 import JsonLd from '@/components/JsonLd';
 import ArticleFooterCTA from '@/components/ArticleFooterCTA';
+import BlogLangNotice from '@/components/BlogLangNotice';
 import { Calendar, Clock, Check } from 'lucide-react';
 import { articles } from '@/lib/articles';
 import { getArticleContent } from '@/lib/articleContent';
@@ -101,6 +102,8 @@ export default async function ArticlePage({ params }: Props) {
               </span>
             </div>
           </header>
+
+          <BlogLangNotice />
 
           {/* Lead */}
           <p className="text-xl text-navy-700 leading-relaxed mb-10">{content.intro}</p>

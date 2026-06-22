@@ -4,24 +4,33 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { faqs } from '@/lib/faqs';
+import { useT, useLanguage } from '@/lib/i18n/LanguageProvider';
+
+interface FaqItem { category: string; question: string; answer: string }
 
 export default function ImprovedFAQSection() {
   const router = useRouter();
+  const t = useT();
+  const { tx } = useLanguage();
+  const allLabel = t('faq.all');
+  const faqs = tx<FaqItem[]>('faq.items');
   const [openKey, setOpenKey] = useState<string | null>('0');
-  const [activeCategory, setActiveCategory] = useState<string>('Wszystkie');
+  const [activeCategory, setActiveCategory] = useState<string>(allLabel);
 
   const categories = useMemo(
-    () => ['Wszystkie', ...Array.from(new Set(faqs.map((f) => f.category)))],
-    []
+    () => [allLabel, ...Array.from(new Set(faqs.map((f) => f.category)))],
+    [allLabel, faqs]
   );
+
+  // Po zmianie języka stara etykieta kategorii może nie istnieć — wróć do „wszystkie”.
+  const effectiveCategory = categories.includes(activeCategory) ? activeCategory : allLabel;
 
   const visible = useMemo(
     () =>
       faqs
         .map((f, i) => ({ ...f, key: String(i) }))
-        .filter((f) => activeCategory === 'Wszystkie' || f.category === activeCategory),
-    [activeCategory]
+        .filter((f) => effectiveCategory === allLabel || f.category === effectiveCategory),
+    [effectiveCategory, allLabel, faqs]
   );
 
   return (
@@ -29,10 +38,10 @@ export default function ImprovedFAQSection() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-navy-900 mb-4">
-            Najczęściej zadawane pytania
+            {t('faq.heading')}
           </h2>
           <p className="text-lg text-navy-700">
-            Ponad 30 odpowiedzi na realne pytania klientów o najem okazjonalny.
+            {t('faq.subtitle')}
           </p>
         </div>
 
@@ -44,7 +53,7 @@ export default function ImprovedFAQSection() {
               onClick={() => setActiveCategory(cat)}
               className={cn(
                 'px-4 py-2 rounded-full text-sm font-medium transition-colors border',
-                activeCategory === cat
+                effectiveCategory === cat
                   ? 'bg-navy-900 text-white border-navy-900'
                   : 'bg-white text-navy-700 border-navy-200 hover:border-gold-400'
               )}
@@ -84,16 +93,16 @@ export default function ImprovedFAQSection() {
         {/* CTA */}
         <div className="mt-12 text-center bg-gradient-to-br from-navy-900 to-navy-800 p-8 rounded-2xl">
           <p className="text-white font-semibold text-lg mb-2">
-            Masz komplet informacji?
+            {t('faq.ctaTitle')}
           </p>
           <p className="text-navy-300 mb-6">
-            Zamów dokumenty online — całą resztą zajmiemy się za Ciebie.
+            {t('faq.ctaText')}
           </p>
           <button
             onClick={() => router.push('/zamowienie')}
             className="inline-flex items-center justify-center px-8 py-4 bg-gold-500 text-navy-900 font-bold rounded-lg hover:bg-gold-600 transition-colors"
           >
-            Zamów online
+            {t('faq.ctaBtn')}
           </button>
         </div>
       </div>

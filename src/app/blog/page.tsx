@@ -34,16 +34,6 @@ export default function BlogPage() {
             ]}
           />
 
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-navy-900 mb-4">
-              Blog o najmie okazjonalnym
-            </h1>
-            <p className="text-lg text-navy-700 max-w-2xl mx-auto">
-              Praktyczne porady, wyjaśnienia dokumentów i odpowiedzi na najczęstsze pytania —
-              dla najemców i właścicieli.
-            </p>
-          </div>
-
           <BlogList />
         </div>
       </div>

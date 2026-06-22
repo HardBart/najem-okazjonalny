@@ -31,6 +31,12 @@ export interface Addon {
   price: number;
   /** Pakiety, w których dodatek jest już wliczony — koszyk go wtedy ukrywa. */
   includedIn?: PackageId[];
+  /** Opcjonalne, konkretne punkty „co zawiera” — renderowane jako lista pod opisem. */
+  highlights?: string[];
+  /** Wyróżniony pakiet — render z badge „Pakiet” i mocniejszym obramowaniem. */
+  featured?: boolean;
+  /** Pakiety, w których dodatek jest niedostępny (np. nie ma sensu) — koszyk go ukrywa. */
+  excludedFrom?: PackageId[];
 }
 
 export interface Order {
@@ -48,7 +54,6 @@ export interface Order {
   };
   rentalData: {
     currentAddress: string;
-    desiredCity: string;
     rentalPurpose: string;
   };
   /** Dane dostawy dokumentów (paczkomat InPost / kurier / elektronicznie). */
@@ -73,14 +78,43 @@ export interface Order {
   notes?: string;
   /** Wersja regulaminu zaakceptowana przy zamówieniu (dowodowo przy sporach). */
   regulaminVersion?: string;
+  /** Wersja polityki prywatności zaakceptowana przy zamówieniu (dowodowo przy sporach). */
+  politykaVersion?: string;
   /** Adres IP z chwili złożenia zamówienia (logi/dowody zgód). */
   ip?: string;
   /** Użyty kod rabatowy (jeśli był). */
   discountCode?: string;
   /** Zastosowana kwota zniżki w zł. */
   discountAmount?: number;
+  /** Dane do dokumentu sprzedaży podane w formularzu. wantInvoice=false → rachunek. */
+  invoice?: {
+    wantInvoice: boolean;
+    buyerType?: 'company' | 'person';
+    /** Nazwa firmy (gdy buyerType=company). */
+    companyName?: string;
+    /** NIP (gdy buyerType=company). */
+    nip?: string;
+    /** Imię i nazwisko nabywcy (gdy buyerType=person). */
+    buyerName?: string;
+    /** Adres nabywcy. */
+    address?: string;
+  };
+  /** Wystawiony dokument księgowy (po opłaceniu) — gwarantuje jednorazowość. */
+  invoiceDoc?: {
+    number: string;
+    type: 'faktura' | 'rachunek';
+    issuedAt: string;
+  };
+  /** Nr/ID transakcji Przelewy24 z webhooka notify (na dokument). */
+  p24TransactionId?: string;
   /** Znacznik wysłania przypomnienia po roku (ISO) — zapobiega ponownej wysyłce. */
   renewalReminderSentAt?: string;
+  /** Data usunięcia numeru PESEL (RODO — dowód realizacji obowiązku). */
+  peselDeletedAt?: string;
+  /** Data anonimizacji danych realizacyjnych (telefon, adres, cel najmu, dostawa). */
+  dataMinimizedAt?: string;
+  /** Data pełnej anonimizacji danych osobowych po okresie księgowym (5 lat). */
+  fullyAnonymizedAt?: string;
   /** Dane przesyłki utworzonej w InPost ShipX po opłaceniu zamówienia. */
   shipment?: {
     provider: 'inpost';
@@ -94,6 +128,8 @@ export interface Order {
     marketing: boolean;
     /** Zgoda na natychmiastowe wykonanie i utratę prawa odstąpienia (Konsument). */
     immediateService?: boolean;
+    /** Oświadczenie o techniczno-organizacyjnym charakterze usługi (dowodowo). */
+    serviceDisclaimer?: boolean;
   };
 }
 

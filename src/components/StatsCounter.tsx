@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Users, ShieldCheck, Clock, MapPin } from 'lucide-react';
+import { useT } from '@/lib/i18n/LanguageProvider';
 
 interface Stat {
   icon: typeof Users;
@@ -11,14 +12,17 @@ interface Stat {
   suffix?: string;
   /** Jeśli statyczny tekst zamiast liczby. */
   staticValue?: string;
-  label: string;
+  /** Klucz tłumaczenia wartości (gdy tekst wymaga tłumaczenia). */
+  valueKey?: string;
+  /** Klucz tłumaczenia etykiety. */
+  labelKey: string;
 }
 
 const STATS: Stat[] = [
-  { icon: Users, target: 100, suffix: '+', label: 'obsłużonych klientów' },
-  { icon: ShieldCheck, target: 100, suffix: '%', label: 'zaakceptowanych dokumentów' },
-  { icon: Clock, staticValue: '24-48h', label: 'średni czas realizacji' },
-  { icon: MapPin, staticValue: 'Cała Polska', label: 'obszar działania' },
+  { icon: Users, target: 100, suffix: '+', labelKey: 'stats.clients' },
+  { icon: ShieldCheck, target: 100, suffix: '%', labelKey: 'stats.accept' },
+  { icon: Clock, staticValue: '24-48h', labelKey: 'stats.time' },
+  { icon: MapPin, valueKey: 'coverage.panelTitle', labelKey: 'stats.coverage' },
 ];
 
 function useCountUp(target: number, run: boolean, duration = 1400) {
@@ -42,8 +46,9 @@ function useCountUp(target: number, run: boolean, duration = 1400) {
 
 function StatItem({ stat, run }: { stat: Stat; run: boolean }) {
   const Icon = stat.icon;
+  const t = useT();
   const counted = useCountUp(stat.target ?? 0, run && stat.target !== undefined);
-  const display = stat.staticValue ?? `${counted}${stat.suffix ?? ''}`;
+  const display = stat.valueKey ? t(stat.valueKey) : (stat.staticValue ?? `${counted}${stat.suffix ?? ''}`);
 
   return (
     <div className="text-center">
@@ -51,7 +56,7 @@ function StatItem({ stat, run }: { stat: Stat; run: boolean }) {
         <Icon className="w-7 h-7 text-gold-400" />
       </div>
       <div className="text-3xl md:text-4xl font-bold text-white mb-1">{display}</div>
-      <div className="text-sm text-navy-300">{stat.label}</div>
+      <div className="text-sm text-navy-300">{t(stat.labelKey)}</div>
     </div>
   );
 }

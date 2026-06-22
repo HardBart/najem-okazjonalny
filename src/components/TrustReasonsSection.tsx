@@ -1,55 +1,33 @@
+'use client';
+
 import { Award, Users, Clock, Scale, MapPin, Timer } from 'lucide-react';
 import { company } from '@/lib/company';
+import { useT, useLanguage } from '@/lib/i18n/LanguageProvider';
+
+const ICONS = [Award, Users, Clock, Scale, MapPin];
 
 export default function TrustReasonsSection() {
-  const reasons = [
-    {
-      icon: Award,
-      metric: `od ${company.foundedYear}`,
-      title: 'Doświadczenie i stała działalność',
-      text: `Spółka ${company.legalName} działa od ${company.foundedYear} roku i wyspecjalizowała się wyłącznie w dokumentach do najmu okazjonalnego.`,
-    },
-    {
-      icon: Users,
-      metric: '100+',
-      title: 'Obsłużonych klientów',
-      text: 'Setki spraw doprowadzonych do gotowego kompletu dokumentów — najemcy, studenci, obcokrajowcy, osoby po przeprowadzce.',
-    },
-    {
-      icon: Clock,
-      metric: '24–48h',
-      title: 'Szybka realizacja',
-      text: 'Komplet dokumentów przygotowujemy zwykle w jeden–dwa dni, a w trybie ekspresowym tego samego dnia.',
-    },
-    {
-      icon: Scale,
-      metric: 'Notariusz',
-      title: 'Współpraca z kancelariami',
-      text: 'Stała współpraca z kancelariami notarialnymi — podpis właściciela lokalu zawsze jest poświadczony notarialnie.',
-    },
-    {
-      icon: MapPin,
-      metric: 'Cała Polska',
-      title: 'Obsługa ogólnopolska',
-      text: 'Działamy zdalnie w całym kraju, a adres w oświadczeniu może znajdować się w dowolnym mieście.',
-    },
-    {
-      icon: Timer,
-      metric: '15 min',
-      title: 'Szybki kontakt',
-      text: 'W godzinach pracy oddzwaniamy zwykle w ciągu 15 minut. Rozmawiasz z człowiekiem, nie z automatem.',
-    },
-  ];
+  const t = useT();
+  const { tx } = useLanguage();
+  const items = tx<{ metric: string; title: string; text: string }[]>('trust.items');
+  const reasons = items.map((it, i) => ({
+    icon: ICONS[i],
+    metric: i === 0 ? `${t('trust.since')} ${company.foundedYear}` : it.metric,
+    title: it.title,
+    text: it.text
+      .replace('{company}', company.legalName)
+      .replace('{year}', String(company.foundedYear)),
+  }));
 
   return (
     <section className="py-20 bg-gradient-to-br from-navy-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-14">
           <h2 className="text-3xl md:text-4xl font-bold text-navy-900 mb-4">
-            Dlaczego klienci nam ufają?
+            {t('trust.heading')}
           </h2>
           <p className="text-lg text-navy-700 max-w-2xl mx-auto">
-            Bez pustych haseł — konkretne fakty, które możesz sprawdzić.
+            {t('trust.subtitle')}
           </p>
         </div>
 
@@ -78,9 +56,8 @@ export default function TrustReasonsSection() {
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 bg-white border-2 border-navy-100 rounded-2xl px-6 py-5 max-w-3xl mx-auto text-center sm:text-left">
           <Timer className="w-8 h-8 text-gold-600 flex-shrink-0" />
           <p className="text-navy-700 text-sm">
-            <strong className="text-navy-900">Średni czas realizacji to 24–48 godzin.</strong>{' '}
-            Większość klientów zamawia usługę na 1–3 dni przed podpisaniem umowy najmu —
-            jeśli masz wyznaczony termin, najlepiej zacząć już teraz.
+            <strong className="text-navy-900">{t('trust.urgencyBold')}</strong>
+            {t('trust.urgencyRest')}
           </p>
         </div>
       </div>

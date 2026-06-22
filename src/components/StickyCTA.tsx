@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
 import Button from './Button';
+import { useT } from '@/lib/i18n/LanguageProvider';
 
 export default function StickyCTA() {
   const router = useRouter();
+  const t = useT();
   const [isVisible, setIsVisible] = useState(false);
   const [isClosed, setIsClosed] = useState(false);
 
@@ -42,14 +44,14 @@ export default function StickyCTA() {
           <div className="flex items-center justify-between gap-4 pr-8">
             <div className="flex-1">
               <div className="text-xs text-gold-400 font-medium mb-1">
-                Komplet dokumentów nawet w 24h
+                {t('sticky.eyebrow')}
               </div>
               <div className="text-white font-semibold text-sm">
-                Zamów online — zajmiemy się resztą
+                {t('sticky.title')}
               </div>
             </div>
             <Button variant="secondary" size="sm" onClick={() => router.push('/#pakiety')}>
-              Wybierz pakiet
+              {t('sticky.button')}
             </Button>
           </div>
         </div>

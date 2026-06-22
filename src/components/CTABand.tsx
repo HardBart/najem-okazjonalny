@@ -2,10 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
+import { useT } from '@/lib/i18n/LanguageProvider';
 
 interface CTABandProps {
   /** Wariant tła: 'dark' (granat) lub 'light' (jasny gradient). */
   variant?: 'dark' | 'light';
+  /** Który zestaw przetłumaczonych tekstów użyć, gdy nie podano własnych. */
+  content?: 'default' | 'light';
+  /** Jawny tekst (np. dynamiczny na stronach miast) — pomija tłumaczenie. */
   title?: string;
   subtitle?: string;
 }
@@ -16,11 +20,15 @@ interface CTABandProps {
  */
 export default function CTABand({
   variant = 'dark',
-  title = 'Potrzebujesz dokumentów do najmu okazjonalnego?',
-  subtitle = 'Zamów online — komplet dokumentów gotowy nawet w 24h.',
+  content = 'default',
+  title,
+  subtitle,
 }: CTABandProps) {
   const router = useRouter();
+  const t = useT();
   const isDark = variant === 'dark';
+  const resolvedTitle = title ?? t(content === 'light' ? 'cta.titleLight' : 'cta.title');
+  const resolvedSubtitle = subtitle ?? t(content === 'light' ? 'cta.subtitleLight' : 'cta.subtitle');
 
   return (
     <section
@@ -38,9 +46,9 @@ export default function CTABand({
                 isDark ? 'text-white' : 'text-navy-900'
               }`}
             >
-              {title}
+              {resolvedTitle}
             </h2>
-            <p className={isDark ? 'text-navy-300' : 'text-navy-700'}>{subtitle}</p>
+            <p className={isDark ? 'text-navy-300' : 'text-navy-700'}>{resolvedSubtitle}</p>
           </div>
 
           <div className="flex-shrink-0">
@@ -48,7 +56,7 @@ export default function CTABand({
               onClick={() => router.push('/#pakiety')}
               className="inline-flex items-center justify-center px-8 py-4 bg-gold-500 text-navy-900 font-bold rounded-lg hover:bg-gold-600 transition-all shadow-lg hover:shadow-xl whitespace-nowrap"
             >
-              Wybierz pakiet
+              {t('sticky.button')}
               <ArrowRight className="w-5 h-5 ml-2" />
             </button>
           </div>

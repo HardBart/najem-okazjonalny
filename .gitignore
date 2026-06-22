@@ -36,3 +36,7 @@ next-env.d.ts
 # data
 /data/*.json
 !/data/.gitkeep
+
+# dokumenty-produkty (nie publikowaæ)
+/Dokumenty najem okazjonalny/
+

@@ -5,102 +5,46 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, RotateCcw, Sparkles, Check } from 'lucide-react';
 import { getPackageById } from '@/lib/packages';
 import { formatPrice } from '@/lib/utils';
+import { useT, useLanguage } from '@/lib/i18n/LanguageProvider';
 
 type Role = 'tenant' | 'landlord' | 'manager';
 type Problem = 'no-address' | 'documents' | 'full-service' | 'unsure';
 type Speed = 'today' | '2days' | 'week';
 
-interface Step {
-  key: 'role' | 'problem' | 'speed';
-  question: string;
-  options: { value: string; label: string }[];
-}
-
-const STEPS: Step[] = [
-  {
-    key: 'role',
-    question: 'Kim jesteś?',
-    options: [
-      { value: 'tenant', label: 'Najemca' },
-      { value: 'landlord', label: 'Wynajmujący' },
-      { value: 'manager', label: 'Zarządzam wieloma lokalami' },
-    ],
-  },
-  {
-    key: 'problem',
-    question: 'Jaki masz problem?',
-    options: [
-      { value: 'no-address', label: 'Nie mam adresu' },
-      { value: 'documents', label: 'Potrzebuję dokumentów' },
-      { value: 'full-service', label: 'Chcę pełną obsługę' },
-      { value: 'unsure', label: 'Nie wiem czego potrzebuję' },
-    ],
-  },
-  {
-    key: 'speed',
-    question: 'Jak szybko potrzebujesz rozwiązania?',
-    options: [
-      { value: 'today', label: 'Dzisiaj' },
-      { value: '2days', label: 'Do 2 dni' },
-      { value: 'week', label: 'Do tygodnia' },
-    ],
-  },
+// Wartości stałe (niezależne od języka); etykiety pobierane z tłumaczeń po indeksie.
+const STEP_META: { key: 'role' | 'problem' | 'speed'; values: string[] }[] = [
+  { key: 'role', values: ['tenant', 'landlord', 'manager'] },
+  { key: 'problem', values: ['no-address', 'documents', 'full-service', 'unsure'] },
+  { key: 'speed', values: ['today', '2days', 'week'] },
 ];
 
 interface Recommendation {
   isInvestor: boolean;
   packageId?: string;
-  reason: string;
+  reasonKey: string;
 }
 
 function recommend(role: Role, problem: Problem, speed: Speed): Recommendation {
-  // Zarządca wielu lokali → ścieżka inwestorska
-  if (role === 'manager') {
-    return {
-      isInvestor: true,
-      reason:
-        'Przy wielu lokalach przygotujemy indywidualną wycenę i stałą obsługę. Najlepsza będzie ścieżka dla zarządzających najmem.',
-    };
-  }
-
-  // Pełna obsługa → Komplet (art. 777 k.p.c.)
-  if (problem === 'full-service') {
-    return {
-      isInvestor: false,
-      packageId: 'vip',
-      reason: 'Chcesz mieć wszystko z głowy — Komplet załatwia wszystko w jednym miejscu, łącznie z poddaniem się egzekucji u notariusza (art. 777 k.p.c.).',
-    };
-  }
-  // Pilne „dzisiaj" → Premium (ekspres 24h)
-  if (speed === 'today') {
-    return {
-      isInvestor: false,
-      packageId: 'premium',
-      reason: 'Potrzebujesz dokumentów na dziś — Premium daje notarialne poświadczenie podpisu i realizację ekspresową w 24 godziny.',
-    };
-  }
-
-  // Tylko adres + spokojny termin → Start (profil zaufany)
-  if (problem === 'no-address' && speed === 'week') {
-    return {
-      isInvestor: false,
-      packageId: 'basic',
-      reason: 'Potrzebujesz samego adresu bez pośpiechu — Start to adres i oświadczenie właściciela z podpisem profilem zaufanym. Jeśli wynajmujący wymaga formy notarialnej, wybierz Standard.',
-    };
-  }
-
-  // Reszta (w tym „nie wiem", „potrzebuję dokumentów", termin do 2 dni) → Standard
-  return {
-    isInvestor: false,
-    packageId: 'standard',
-    reason: 'Najlepszy wybór dla Twojej sytuacji — Standard to notarialne poświadczenie podpisu właściciela, gotowe w 24–48 godzin.',
-  };
+  if (role === 'manager') return { isInvestor: true, reasonKey: 'manager' };
+  if (problem === 'full-service') return { isInvestor: false, packageId: 'vip', reasonKey: 'fullService' };
+  if (speed === 'today') return { isInvestor: false, packageId: 'premium', reasonKey: 'today' };
+  if (problem === 'no-address' && speed === 'week') return { isInvestor: false, packageId: 'basic', reasonKey: 'noAddressWeek' };
+  return { isInvestor: false, packageId: 'standard', reasonKey: 'standard' };
 }
 
 export default function QuickQuiz() {
   const router = useRouter();
+  const t = useT();
+  const { tx } = useLanguage();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  const qsteps = tx<{ question: string; options: string[] }[]>('quiz.steps');
+  const STEPS = STEP_META.map((m, i) => ({
+    key: m.key,
+    question: qsteps[i].question,
+    options: m.values.map((value, j) => ({ value, label: qsteps[i].options[j] })),
+  }));
 
   const isResult = step >= STEPS.length;
 
@@ -125,10 +69,10 @@ export default function QuickQuiz() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-gold-500/20 border border-gold-500/30 text-gold-300 text-sm font-semibold mb-4">
             <Sparkles className="w-4 h-4 mr-2" />
-            Sprawdź w 30 sekund, czego potrzebujesz
+            {t('quiz.badge')}
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Dobierzemy rozwiązanie do Twojej sytuacji
+            {t('quiz.heading')}
           </h2>
         </div>
 
@@ -137,7 +81,7 @@ export default function QuickQuiz() {
           {!isResult && (
             <div className="mb-8">
               <div className="flex justify-between text-xs text-navy-500 mb-2">
-                <span>Krok {step + 1} z {STEPS.length}</span>
+                <span>{t('quiz.progressStep')} {step + 1} {t('quiz.progressOf')} {STEPS.length}</span>
                 <span>{Math.round((step / STEPS.length) * 100)}%</span>
               </div>
               <div className="h-2 bg-navy-100 rounded-full overflow-hidden">
@@ -171,7 +115,7 @@ export default function QuickQuiz() {
                   onClick={() => setStep((s) => s - 1)}
                   className="mt-6 text-sm text-navy-500 hover:text-navy-700"
                 >
-                  ← Wstecz
+                  {t('quiz.back')}
                 </button>
               )}
             </div>
@@ -184,32 +128,32 @@ export default function QuickQuiz() {
               {rec?.isInvestor ? (
                 <>
                   <h3 className="text-2xl font-bold text-navy-900 mb-2">
-                    Rekomendujemy: obsługę wielu lokali
+                    {t('quiz.investorTitle')}
                   </h3>
-                  <p className="text-navy-600 mb-6 max-w-lg mx-auto">{rec.reason}</p>
+                  <p className="text-navy-600 mb-6 max-w-lg mx-auto">{t(`quiz.reasons.${rec.reasonKey}`)}</p>
                   <button
                     onClick={() => router.push('/obsluga-wielu-lokali')}
                     className="inline-flex items-center justify-center px-8 py-4 bg-gold-500 text-navy-900 font-bold rounded-lg hover:bg-gold-600 transition-all shadow-lg"
                   >
-                    Zobacz ofertę dla zarządzających
+                    {t('quiz.investorBtn')}
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </button>
                 </>
               ) : (
                 <>
-                  <div className="text-sm text-navy-500 mb-1">Rekomendowany pakiet</div>
+                  <div className="text-sm text-navy-500 mb-1">{t('quiz.recommendedLabel')}</div>
                   <h3 className="text-3xl font-bold text-navy-900 mb-1">
-                    Pakiet {recommendedPkg?.name}
+                    {t('quiz.packagePrefix')} {recommendedPkg?.name}
                   </h3>
                   <div className="text-2xl font-bold text-gold-600 mb-3">
                     {recommendedPkg && formatPrice(recommendedPkg.price)}
                   </div>
-                  <p className="text-navy-600 mb-6 max-w-lg mx-auto">{rec?.reason}</p>
+                  <p className="text-navy-600 mb-6 max-w-lg mx-auto">{rec && t(`quiz.reasons.${rec.reasonKey}`)}</p>
                   <button
                     onClick={() => router.push(`/zamowienie?pakiet=${rec?.packageId}`)}
                     className="inline-flex items-center justify-center px-8 py-4 bg-gold-500 text-navy-900 font-bold rounded-lg hover:bg-gold-600 transition-all shadow-lg w-full sm:w-auto"
                   >
-                    Zamów pakiet {recommendedPkg?.name}
+                    {t('quiz.orderPrefix')} {recommendedPkg?.name}
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </button>
                 </>
@@ -221,7 +165,7 @@ export default function QuickQuiz() {
                   className="inline-flex items-center gap-1 text-sm text-navy-500 hover:text-navy-700"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  Zacznij od nowa
+                  {t('quiz.restart')}
                 </button>
               </div>
             </div>

@@ -126,6 +126,13 @@ export class Przelewy24Service {
     orderId: number;
     amount: number;
   }): Promise<boolean> {
+    // Tryb testowy WYŁĄCZNIE poza produkcją: pozwala lokalnie przejść webhook bez
+    // realnego konta P24. W produkcji (NODE_ENV=production) flaga jest ignorowana.
+    if (process.env.NODE_ENV !== 'production' && process.env.P24_MOCK_VERIFY === 'true') {
+      console.warn('Przelewy24 verifyTransaction: TRYB TESTOWY (mock) — pomijam realną weryfikację P24.');
+      return true;
+    }
+
     const sign = sha384({
       sessionId: params.sessionId,
       orderId: params.orderId,

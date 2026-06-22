@@ -8,6 +8,9 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  // pdfmake/pdfkit/fontkit korzystają z plików danych (.trie/.afm), których webpack
+  // nie pakuje — ładujemy je z node_modules w runtime (tylko serwer).
+  serverExternalPackages: ['pdfmake'],
   // Ustal katalog projektu jako root (wycisza ostrzeżenie o wielu plikach lockfile).
   outputFileTracingRoot: __dirname,
   // Nie blokuj produkcyjnego buildu na regułach ESLint (typy sprawdza `tsc`).

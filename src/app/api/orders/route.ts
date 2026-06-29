@@ -32,6 +32,14 @@ export async function POST(request: NextRequest) {
     const discountAmount = validDiscount ? discountAmountFor(baseAmount, validDiscount) : 0;
     const totalAmount = baseAmount - discountAmount;
 
+    // TRYB TESTOWY PŁATNOŚCI: gdy w .env ustawione TEST_PAYMENT_AMOUNT (np. 1),
+    // kwota do pobrania jest nadpisywana — WYŁĄCZNIE do testów. Wyłącz przed startem!
+    const testAmt = Number(process.env.TEST_PAYMENT_AMOUNT);
+    const chargeAmount = Number.isFinite(testAmt) && testAmt > 0 ? testAmt : totalAmount;
+    if (chargeAmount !== totalAmount) {
+      console.warn(`[orders] UWAGA TRYB TESTOWY — kwota nadpisana na ${chargeAmount} zł (TEST_PAYMENT_AMOUNT). Wyłącz przed startem sprzedaży!`);
+    }
+
     // Get client IP
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0] : '127.0.0.1';
@@ -48,7 +56,7 @@ export async function POST(request: NextRequest) {
       invoice,
       paymentStatus: 'pending',
       orderStatus: 'new',
-      amount: totalAmount,
+      amount: chargeAmount,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       regulaminVersion,
@@ -65,7 +73,7 @@ export async function POST(request: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     const p24 = await Przelewy24Service.registerTransaction({
       sessionId: orderId,
-      amount: totalAmount * 100,
+      amount: chargeAmount * 100,
       description: `Pakiet ${selectedPackage.name} - Najem Okazjonalny`,
       email: personalData.email,
       urlReturn: `${appUrl}/platnosc/sukces?orderId=${orderId}`,

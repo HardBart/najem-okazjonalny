@@ -154,3 +154,47 @@ Decyzje: model **MINIMALNY** + **PESEL warunkowo i kasowany po realizacji**.
 `scripts/`: `test-webhook-p24.js`, `test-retention.js`, `build-legal-docx.js`, `build-brief-docx.js`, `legal-data-pl.js`, `build-brief-docx.js`. Dev-routy (404 w prod): `/api/faktura-podglad`, `/api/dev/order-mail-preview`.
 
 **Wznowienie:** „Przeczytaj HANDOFF_SESJA.md (AKTUALIZACJA 3) i kontynuuj #7 — banner cookies".
+
+---
+
+## 🆕 AKTUALIZACJA 4 (NAJNOWSZA) — WDROŻENIE NA PRODUKCJĘ + podłączanie płatności P24
+
+> Wszystkie zadania #2–#8 zamknięte. Trwa #1 (wdrożenie). P24 dało zielone światło na konto produkcyjne.
+
+### Co zrobione (serwer Hostinger VPS)
+- **Kod wdrożony:** GitHub `origin/main` (HardBart/najem-okazjonalny) → na serwerze `/var/www/najemokazjonalny24`: `git pull` + `npm ci` + `npm run build` + `pm2 reload najemokazjonalny24`. Build OK.
+- **WAŻNE — porty:** aplikacja najem działa na **porcie 3002** (pm2 `najemokazjonalny24`). Port **3000 zajmuje sąsiednia apka sprzeciwnakaz** — NIE mylić. (`ecosystem.config.js` w repo ma błędnie 3000 — do poprawienia na 3002 dla zgodności, niekrytyczne.)
+- **Brama dostępu (soft-launch):** strona za **HTTP Basic Auth** (login `demo` / hasło `demo123`, plik `/etc/nginx/.htpasswd-najem`). Zastąpiła tryb „w budowie". Config: `/etc/nginx/sites-available/najemokazjonalny24.com` (kopie: `.bak` = stary maintenance, `.bak2` = wersja tylko-auth). `proxy_pass` → **127.0.0.1:3002**.
+- **Webhook P24 odsłonięty:** w nginx dodany `location = /api/przelewy24/notify` BEZ auth_basic (P24 musi się dodzwonić mimo bramy). Reszta strony dalej za hasłem. Zweryfikowane: webhook → 405 (bez 401), strona → 401. ✅
+- `NEXT_PUBLIC_APP_URL=https://najemokazjonalny24.com` w `.env` na serwerze (potwierdzone) — urlReturn/urlStatus poprawne, bez potrzeby rebuildu przy zmianie kluczy P24 (P24_* to zmienne runtime).
+
+### Decyzje klienta (ta sesja)
+- **Soft-launch za bramą** (NIE pełne otwarcie) — najpierw realny test płatności produkcyjnej za `demo`/`demo123`.
+- **Maile (Resend) na razie OFF** — płatność działa, dokument się wystawia i jest w panelu admina, ale klient nie dostaje maila (tylko log). Resend dopinamy później.
+
+### ⏯️ RESUME POINT (wieczorem) — KROK 2 w toku
+Na serwerze, w `/var/www/najemokazjonalny24`, wpisać produkcyjne dane P24 do `.env` (klient ma je z panel.przelewy24.pl):
+```
+sed -i 's|^P24_MERCHANT_ID=.*|P24_MERCHANT_ID=...|' .env
+sed -i 's|^P24_POS_ID=.*|P24_POS_ID=...|' .env
+sed -i 's|^P24_CRC=.*|P24_CRC=...|' .env
+sed -i 's|^P24_API_KEY=.*|P24_API_KEY=...|' .env
+sed -i 's|^P24_SANDBOX=.*|P24_SANDBOX=false|' .env
+```
+weryfikacja (masko­wana): `awk -F= '/^P24_/{v=$2; if(length(v)>6) v=substr(v,1,4)"…("length($2)")"; print $1"="v}' .env`
+potem: `pm2 reload najemokazjonalny24` (NIE trzeba rebuildu — P24_* są runtime, NEXT_PUBLIC_APP_URL już OK).
+
+### KROK 3 (po KROKU 2) — test realnej płatności
+- W panelu P24 (produkcja) ustawić/potwierdzić **adres powiadomień (urlStatus): `https://najemokazjonalny24.com/api/przelewy24/notify`**.
+- Złożyć realne testowe zamówienie (wejście przez bramę `demo`/`demo123` → `/zamowienie` → płatność) → sprawdzić: webhook → status `completed`, dokument w panelu `/admin`, `p24TransactionId` zapisany.
+- (Opcjonalnie po teście) wyzerować serwerowy `data/invoice-registry.json`, żeby pierwszy realny klient dostał numer 1 — UWAGA: nie kasować, jeśli będą tam już realne zamówienia.
+
+### DO PEŁNEGO OTWARCIA (później, gdy gotowy)
+- **Maile:** `RESEND_API_KEY` + weryfikacja domeny w Resend (SPF/DKIM) + DPA + certyfikacja DPF (wymóg prawnika).
+- **Crony na VPS** (`crontab -e`): `/api/cron/reminders` i `/api/cron/retention` (z `CRON_SECRET`).
+- **logrotate** logów ≤30 dni.
+- **Sekrety produkcyjne** w `.env`: mocny `JWT_SECRET`, `ADMIN_PASSWORD_HASH`, `CRON_SECRET`.
+- **Podpis prawnika** pod dokumentami (Wordy w `dokumenty-prawne/`).
+- **Zdjęcie bramy** `demo`/`demo123`: usunąć 3 linie `auth_basic`/`auth_basic_user_file` z `location /` (webhook-location zostawić bez zmian) → `nginx -t` → `systemctl reload nginx`.
+
+**Wznowienie:** „Przeczytaj HANDOFF_SESJA.md (AKTUALIZACJA 4) — wracamy do KROKU 2: wpisanie produkcyjnych P24 do .env + reload, potem test płatności".

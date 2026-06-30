@@ -198,3 +198,29 @@ potem: `pm2 reload najemokazjonalny24` (NIE trzeba rebuildu — P24_* są runtim
 - **Zdjęcie bramy** `demo`/`demo123`: usunąć 3 linie `auth_basic`/`auth_basic_user_file` z `location /` (webhook-location zostawić bez zmian) → `nginx -t` → `systemctl reload nginx`.
 
 **Wznowienie:** „Przeczytaj HANDOFF_SESJA.md (AKTUALIZACJA 4) — wracamy do KROKU 2: wpisanie produkcyjnych P24 do .env + reload, potem test płatności".
+
+---
+
+## 🆕 AKTUALIZACJA 5 (NAJNOWSZA) — produkcyjne P24 podłączone, czeka test 1 zł
+
+### Zrobione (wieczór)
+- **Produkcyjne dane P24 w `.env` na serwerze:** `P24_MERCHANT_ID=400807`, `P24_POS_ID=400807`, `P24_CRC=0ce6cbc13aa51084`, `P24_API_KEY=4431f9e8deca2736460b021a65e593e9`, `P24_SANDBOX=false`. (W .env były tylko `P24_SANDBOX` — resztę DOPISALIŚMY.) Klucze działają — bramka produkcyjna się otwiera.
+- **Webhook odsłonięty w nginx** (`location = /api/przelewy24/notify` bez auth) — patrz AKTUALIZACJA 4.
+- **NAPRAWIONY BŁĄD strony powrotu:** `/platnosc/sukces` pokazywała „sukces" nawet po anulowaniu. Teraz odpytuje **`/api/orders/status?orderId=...`** (nowy endpoint, zwraca tylko status), poll ~15s na webhook, i pokazuje sukces (completed) / w trakcie (pending) / nieudane (failed) + „Spróbuj ponownie". i18n PL/EN/UA. Wdrożone i potwierdzone (anulowanie → żółty zegar). 
+- **Tryb testowy kwoty:** flaga `TEST_PAYMENT_AMOUNT` w `.env` (gdy >0, nadpisuje kwotę zamówienia). Kod w `src/app/api/orders/route.ts` (`chargeAmount`). Na serwerze ustawione **`TEST_PAYMENT_AMOUNT=1`** (test za 1 zł). Bezpieczne za bramą Basic Auth. **WYŁĄCZYĆ przed startem!**
+- Cały kod wypchnięty na GitHub i wdrożony (`git pull` + `npm run build` + `pm2 reload`). Build zielony.
+
+### ⏯️ RESUME POINT (jutro) — test płatności 1 zł
+1. Na serwerze: `pm2 reload najemokazjonalny24` (jeśli nie zrobione na koniec) — załaduje flagę 1 zł.
+2. W incognito: brama `demo`/`demo123` → zamówienie (Start) → bramka P24 pokaże **1,00 zł** → zapłać (BLIK).
+3. Strona powrotu powinna pokazać **ZIELONY sukces** (płatność completed → webhook).
+4. `/admin` (login admina) → sprawdzić: zamówienie **Opłacone** + **rachunek** w kolumnie „Dokument" + kwota 1 zł.
+
+### PO udanym teście 1 zł
+- **Wyłączyć tryb testowy:** `sed -i 's|^TEST_PAYMENT_AMOUNT=.*|TEST_PAYMENT_AMOUNT=|' .env` → `pm2 reload najemokazjonalny24` (powrót do normalnych cen).
+- **Wyczyścić dane testowe na serwerze:** `echo "[]" > data/orders.json` i zresetować `data/invoice-registry.json` do `{"counters":{},"documents":[]}` — żeby pierwszy realny klient dostał numer 1. (Tylko jeśli nie ma tam realnych zamówień.)
+
+### DO PEŁNEGO OTWARCIA (bez zmian względem AKTUALIZACJI 4)
+Resend (maile) + crony VPS + logrotate + mocne sekrety (.env) + podpis prawnika + **zdjęcie bramy** demo/demo123 (usunąć `auth_basic`/`auth_basic_user_file` z `location /`, zostawić webhook-location). **Przed zdjęciem bramy upewnić się, że `TEST_PAYMENT_AMOUNT` jest puste!**
+
+**Wznowienie:** „Przeczytaj HANDOFF_SESJA.md (AKTUALIZACJA 5) — robimy test płatności 1 zł i sprawdzamy /admin".

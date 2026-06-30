@@ -64,7 +64,10 @@ export async function POST(request: NextRequest) {
       // Idempotentnie: pomijamy, jeśli dokument już wystawiony. Nie blokuje płatności.
       try {
         if (!storedOrder.invoiceDoc) {
-          const p24Id = String(notification.orderId);
+          // P24 udostępnia rozpoznawalną referencję transakcji w polu `statement`
+          // (format P24-XXX-XXX-XXX, ta sama co w mailu/panelu P24) — ją pokazujemy
+          // na dokumencie sprzedaży. Fallback: numeryczny orderId.
+          const p24Id = (notification.statement && String(notification.statement).trim()) || String(notification.orderId);
           const issued = await issueInvoiceForOrder(
             { ...storedOrder, paymentStatus: 'completed' },
             { p24TransactionId: p24Id }
@@ -76,7 +79,7 @@ export async function POST(request: NextRequest) {
           if (!issued.alreadyIssued) {
             await sendInvoiceEmail({ ...storedOrder }, { number: issued.number, type: issued.type, pdf: issued.pdf });
           }
-          console.log(`Order ${storedOrder.orderId}: ${issued.type} ${issued.number} (VAT ${issued.vat})`);
+          console.log(`Order ${storedOrder.orderId}: ${issued.type} ${issued.number} (VAT ${issued.vat}, P24 ref ${p24Id}, orderId ${notification.orderId}, statement ${notification.statement})`);
         }
       } catch (e) {
         console.error('Order invoice error (nie blokuje płatności):', e);
